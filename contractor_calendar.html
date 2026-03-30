@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Calendar — Contractor Portal</title>
+<link rel="stylesheet" href="contractor.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet" />
+<style>
+/* ── Layout ── */
+.cal-layout { display:grid; grid-template-columns:1fr 360px; gap:20px; align-items:start; }
+
+/* ── Calendar Card ── */
+.calendar-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-xl); overflow:hidden; box-shadow:var(--shadow); }
+
+/* ── Calendar Header ── */
+.cal-header { display:flex; align-items:center; justify-content:space-between; padding:20px 24px 16px; border-bottom:1px solid var(--border); background:linear-gradient(135deg,rgba(107,5,4,0.22) 0%,rgba(230,175,46,0.06) 100%); }
+.cal-nav-btn { width:36px;height:36px;background:var(--surface-3);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);cursor:pointer;transition:all var(--transition);flex-shrink:0; }
+.cal-nav-btn:hover { background:var(--gold-dim);border-color:var(--gold-border);color:var(--gold);transform:scale(1.05); }
+.cal-nav-btn:active { transform:scale(0.95); }
+.cal-nav-btn svg { width:16px;height:16px;pointer-events:none; }
+.cal-month-wrap { text-align:center;flex:1;padding:0 12px; }
+.cal-month-label { font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--white);line-height:1.1;cursor:pointer;transition:color var(--transition);display:inline-block; }
+.cal-month-label:hover { color:var(--gold); }
+.cal-year-sub { font-size:11.5px;color:var(--gold);font-weight:500;letter-spacing:1.5px;text-transform:uppercase;margin-top:2px; }
+
+/* ── View Switcher ── */
+.cal-view-switch { display:flex;gap:3px;background:var(--surface-2);padding:3px;border-radius:9px;border:1px solid var(--border); }
+.view-btn { padding:5px 12px;border-radius:7px;font-size:11.5px;font-weight:600;color:var(--text-muted);cursor:pointer;transition:all var(--transition);white-space:nowrap; }
+.view-btn.active { background:var(--maroon);color:#fff;box-shadow:var(--shadow-maroon); }
+.view-btn:hover:not(.active) { color:var(--gold);background:var(--gold-dim); }
+
+/* ── Weekday Row ── */
+.cal-weekdays { display:grid;grid-template-columns:repeat(7,1fr);padding:10px 16px 6px;border-bottom:1px solid var(--border); }
+.cal-weekday { text-align:center;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);padding:4px 0; }
+.cal-weekday.weekend { color:var(--gold);opacity:0.7; }
+
+/* ── Calendar Grid ── */
+.cal-grid { display:grid;grid-template-columns:repeat(7,1fr);padding:10px 16px 16px;gap:4px; }
+.cal-day { aspect-ratio:1;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:6px 4px 4px;cursor:pointer;transition:all 0.2s ease;position:relative;border:1px solid transparent;min-width:0;overflow:hidden; }
+.cal-day:hover:not(.disabled):not(.other-month) { background:var(--gold-dim);border-color:var(--gold-border);transform:scale(1.04); }
+.cal-day.disabled,.cal-day.other-month { opacity:0.28;cursor:default; }
+.cal-day.other-month:hover { transform:none;background:transparent;border-color:transparent; }
+.cal-day.today { background:linear-gradient(135deg,rgba(107,5,4,0.45),rgba(107,5,4,0.22));border-color:rgba(230,175,46,0.35); }
+.cal-day.today .day-num { color:var(--gold);font-weight:800; }
+.cal-day.selected { background:linear-gradient(135deg,var(--gold),#F2C84B);border-color:var(--gold);box-shadow:0 4px 18px rgba(230,175,46,0.4); }
+.cal-day.selected .day-num { color:var(--black);font-weight:800; }
+.cal-day.selected .dot-wrap .evt-dot { background:var(--black); }
+.day-num { font-size:13px;font-weight:600;color:var(--text-primary);line-height:1;margin-bottom:3px; }
+.dot-wrap { display:flex;gap:2px;flex-wrap:wrap;justify-content:center;margin-top:auto;padding-top:2px; }
+.evt-dot { width:5px;height:5px;border-radius:50%;flex-shrink:0; }
+.dot-gold { background:var(--gold); }
+.dot-maroon { background:#f87171; }
+.dot-green { background:var(--success); }
+.dot-blue { background:#818cf8; }
+.dot-more { font-size:8px;color:var(--text-muted);font-weight:700;line-height:5px; }
+
+/* ── Calendar Footer ── */
+.cal-footer { padding:12px 20px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;background:var(--surface-2); }
+.cal-legend { display:flex;gap:14px;flex-wrap:wrap; }
+.leg-item { display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-muted); }
+.leg-dot { width:8px;height:8px;border-radius:50%;flex-shrink:0; }
+
+/* ── Sidebar ── */
+.cal-sidebar { display:flex;flex-direction:column;gap:16px; }
+.today-card { background:linear-gradient(135deg,var(--maroon-dark) 0%,var(--maroon) 100%);border:1px solid rgba(230,175,46,0.2);border-radius:var(--radius-xl);padding:18px 20px;position:relative;overflow:hidden; }
+.today-card::before { content:'';position:absolute;top:-30px;right:-30px;width:120px;height:120px;background:rgba(230,175,46,0.08);border-radius:50%;pointer-events:none; }
+.today-card-label { font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:rgba(255,255,255,0.55);margin-bottom:4px; }
+.today-card-date { font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--gold);line-height:1.1; }
+.today-card-sub { font-size:11.5px;color:rgba(255,255,255,0.6);margin-top:3px; }
+.today-stats { display:flex;gap:14px;margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.1); }
+.ts-item { text-align:center;flex:1; }
+.ts-val { font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--white);line-height:1; }
+.ts-lbl { font-size:10px;color:rgba(255,255,255,0.5);margin-top:2px;text-transform:uppercase;letter-spacing:0.5px; }
+
+/* ── Month Summary ── */
+.month-summary-card { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);padding:18px 20px; }
+.summary-title { font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:14px;display:flex;align-items:center;gap:7px; }
+.summary-title::before { content:'';width:3px;height:14px;background:var(--gold);border-radius:2px;display:inline-block; }
+.summary-row { display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:12.5px; }
+.summary-row:last-child { border-bottom:none;padding-bottom:0; }
+.summary-label { color:var(--text-muted);display:flex;align-items:center;gap:7px; }
+.summary-label span { font-size:14px; }
+.summary-val { font-weight:700;color:var(--text-primary); }
+.summary-val.gold { color:var(--gold); }
+.summary-val.green { color:var(--success); }
+.summary-val.red { color:var(--danger); }
+
+/* ── Day Panel ── */
+.day-panel-card { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);overflow:hidden;flex:1; }
+.day-panel-header { padding:16px 20px;border-bottom:1px solid var(--border);background:var(--surface-2);display:flex;align-items:center;justify-content:space-between; }
+.day-panel-title { font-family:'Playfair Display',serif;font-size:14px;font-weight:700;color:var(--white); }
+.day-panel-sub { font-size:11px;color:var(--text-muted);margin-top:2px; }
+.day-panel-body { padding:14px;max-height:520px;overflow-y:auto; }
+
+/* ── Event Item ── */
+.event-item { display:flex;gap:12px;padding:12px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface-2);margin-bottom:10px;cursor:pointer;transition:all var(--transition);position:relative;overflow:hidden; }
+.event-item::before { content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px;background:var(--gold); }
+.event-item.status-pending::before   { background:var(--gold); }
+.event-item.status-scheduled::before { background:var(--success); }
+.event-item.status-in_progress::before { background:#818cf8; }
+.event-item.status-completed::before { background:#818cf8; }
+.event-item.status-cancelled::before { background:var(--danger); }
+.event-item:hover { border-color:var(--gold-border);background:var(--surface-3);transform:translateX(3px);box-shadow:var(--shadow-sm); }
+.event-time-col { display:flex;flex-direction:column;align-items:center;min-width:46px;flex-shrink:0; }
+.event-time { font-size:11.5px;font-weight:700;color:var(--gold);white-space:nowrap; }
+.event-duration { font-size:9.5px;color:var(--text-muted);white-space:nowrap;margin-top:2px; }
+.event-time-line { flex:1;width:1px;background:var(--border);margin:4px 0;min-height:14px; }
+.event-body { flex:1;min-width:0; }
+.event-name { font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.event-client { font-size:11.5px;color:var(--text-muted);display:flex;align-items:center;gap:4px;margin-bottom:5px; }
+.event-meta { display:flex;gap:6px;flex-wrap:wrap; }
+.event-tag { display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:600;background:var(--surface-3);color:var(--text-muted);border:1px solid var(--border); }
+.event-tag.gold { background:var(--gold-dim);color:var(--gold);border-color:var(--gold-border); }
+.event-actions { display:flex;flex-direction:column;gap:4px;justify-content:center;flex-shrink:0; }
+
+/* ── Empty Day ── */
+.empty-day { text-align:center;padding:40px 20px; }
+.empty-day-icon { font-size:42px;margin-bottom:12px;opacity:0.3;display:block; }
+.empty-day-title { font-size:14px;font-weight:600;color:var(--text-secondary);margin-bottom:6px; }
+.empty-day-sub { font-size:12px;color:var(--text-muted); }
+
+/* ── Event Detail Modal ── */
+.evt-modal-icon { width:52px;height:52px;border-radius:14px;background:var(--gold-dim);border:1px solid var(--gold-border);display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:16px; }
+.evt-modal-info { display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0; }
+.emi-item { background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:10px 13px; }
+.emi-label { font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-muted);font-weight:600;margin-bottom:4px; }
+.emi-value { font-size:13px;color:var(--text-primary);font-weight:600; }
+
+/* ── Add Modal ── */
+.modal-date-badge { display:inline-flex;align-items:center;gap:6px;padding:5px 12px;background:var(--gold-dim);border:1px solid var(--gold-border);border-radius:8px;font-size:12px;color:var(--gold);font-weight:600;margin-bottom:18px; }
+
+/* ── Week View ── */
+.week-view { padding:16px; }
+.week-row { display:grid;grid-template-columns:70px repeat(7,1fr);gap:4px; }
+.week-header-row { display:grid;grid-template-columns:70px repeat(7,1fr);gap:4px;padding-bottom:10px;border-bottom:1px solid var(--border);margin-bottom:8px; }
+.week-header-cell { text-align:center;padding:8px 4px; }
+.week-header-day-num { font-size:18px;font-weight:700;color:var(--text-primary);line-height:1; }
+.week-header-day-name { font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-muted);margin-top:2px; }
+.week-header-cell.today .week-header-day-num { color:var(--gold); }
+.week-header-cell.today .week-header-day-name { color:var(--gold);opacity:0.7; }
+.week-time-col { font-size:10.5px;color:var(--text-muted);text-align:right;padding-right:10px;padding-top:4px;font-weight:500;white-space:nowrap; }
+.week-cell { border:1px solid var(--border);border-radius:6px;min-height:48px;background:var(--surface-2);padding:3px;position:relative;cursor:pointer;transition:background var(--transition); }
+.week-cell:hover { background:var(--surface-3); }
+.week-cell.today-col { border-color:rgba(230,175,46,0.2);background:rgba(230,175,46,0.04); }
+.week-evt { border-radius:5px;padding:3px 6px;font-size:10px;font-weight:600;margin-bottom:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer;transition:opacity var(--transition); }
+.week-evt:hover { opacity:0.8; }
+.week-evt.status-pending    { background:rgba(230,175,46,0.2);color:var(--gold); }
+.week-evt.status-scheduled  { background:rgba(34,197,94,0.15);color:#4ade80; }
+.week-evt.status-in_progress{ background:rgba(129,140,248,0.15);color:#a5b4fc; }
+.week-evt.status-completed  { background:rgba(129,140,248,0.15);color:#a5b4fc; }
+.week-evt.status-cancelled  { background:rgba(239,68,68,0.1);color:#f87171; }
+
+.fade-swap { animation:fadeSlideIn 0.28s ease forwards; }
+
+@keyframes spin { to { transform:rotate(360deg); } }
+@media (max-width:1060px) { .cal-layout { grid-template-columns:1fr; } .cal-sidebar { flex-direction:row;flex-wrap:wrap; } .cal-sidebar > * { flex:1 1 280px; } .day-panel-card { flex:1 1 100%; } }
+@media (max-width:640px)  { .cal-header { flex-wrap:wrap;gap:10px; } .cal-view-switch { order:3;width:100%;justify-content:center; } .day-num { font-size:11px; } .evt-modal-info { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<div class="portal-layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <div class="logo-mark">HF</div>
+        <div class="sidebar-logo-text"><strong>HandyFix</strong><small>Contractor Portal</small></div>
+      </div>
+      <button class="toggle-btn" id="sidebarToggle" title="Toggle Sidebar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+    </div>
+    <div class="sidebar-user">
+      <div class="user-avatar-wrap">
+        <img class="user-avatar" id="sidebarAvatar" src="" alt="" style="display:none"/>
+        <div class="user-avatar-fallback" id="sidebarAvatarFallback">?</div>
+        <span class="status-dot"></span>
+      </div>
+      <div class="user-info">
+        <div class="user-name" id="sidebarUserName">Loading…</div>
+        <div class="user-role" id="sidebarUserRole">Contractor</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+      <a href="contractor_dashboard.html" class="nav-item" data-page="contractor_dashboard.html"><span class="nav-icon">🏠</span><span class="sidebar-label">Dashboard</span><span class="nav-tooltip">Dashboard</span></a>
+      <a href="contractor_bookings.html"  class="nav-item" data-page="contractor_bookings.html"><span class="nav-icon">📋</span><span class="sidebar-label">Bookings</span><span class="nav-badge" id="bookingsBadge" style="display:none">0</span><span class="nav-tooltip">Bookings</span></a>
+      <a href="contractor_messages.html"  class="nav-item" data-page="contractor_messages.html"><span class="nav-icon">💬</span><span class="sidebar-label">Messages</span><span class="nav-badge" id="messagesBadge" style="display:none">0</span><span class="nav-tooltip">Messages</span></a>
+      <a href="contractor_calendar.html"  class="nav-item active" data-page="contractor_calendar.html"><span class="nav-icon">📅</span><span class="sidebar-label">Calendar</span><span class="nav-tooltip">Calendar</span></a>
+      <div class="nav-section-label">Account</div>
+      <a href="contractor_profile.html"   class="nav-item" data-page="contractor_profile.html"><span class="nav-icon">👤</span><span class="sidebar-label">Profile</span><span class="nav-tooltip">Profile</span></a>
+      <a href="contractor_settings.html"  class="nav-item" data-page="contractor_settings.html"><span class="nav-icon">⚙️</span><span class="sidebar-label">Settings</span><span class="nav-tooltip">Settings</span></a>
+      <div class="divider"></div>
+      <button class="nav-item nav-logout" onclick="handleLogout(event)"><span class="nav-icon">🚪</span><span class="sidebar-label">Log Out</span><span class="nav-tooltip">Log Out</span></button>
+    </nav>
+    <div class="sidebar-footer"><div class="sidebar-footer-text">HandyFix v3.0 © 2026</div></div>
+  </aside>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="main-content" id="mainContent">
+    <header class="top-header">
+      <div class="header-left">
+        <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+        <div><div class="page-title">Calendar</div><div class="breadcrumb">Schedule & Booking Management</div></div>
+      </div>
+      <div class="header-right">
+        <div class="header-chip" id="headerDateChip">Loading…</div>
+        <button class="hdr-btn" onclick="jumpToToday()" title="Jump to Today">📅</button>
+        <button class="theme-toggle-btn">☀️</button>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <div class="section-header" style="margin-bottom:18px">
+        <div>
+          <div class="section-title">Service Schedule</div>
+          <div class="section-sub" id="selectedDateLabel">Click a day to view its bookings</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <div class="search-wrap">
+            <span class="s-icon">🔍</span>
+            <input type="text" placeholder="Search bookings…" id="searchInput" oninput="handleSearch(this.value)"/>
+          </div>
+        </div>
+      </div>
+
+      <div class="cal-layout">
+        <!-- Calendar -->
+        <div>
+          <div class="calendar-card">
+            <div class="cal-header">
+              <button class="cal-nav-btn" onclick="prevPeriod()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <div class="cal-month-wrap">
+                <div class="cal-month-label" id="calMonthLabel" onclick="jumpToToday()">—</div>
+                <div class="cal-year-sub" id="calYearSub">—</div>
+              </div>
+              <div style="display:flex;gap:6px;align-items:center">
+                <div class="cal-view-switch" id="viewSwitch">
+                  <div class="view-btn active" onclick="switchView('month',this)">Month</div>
+                  <div class="view-btn" onclick="switchView('week',this)">Week</div>
+                </div>
+                <button class="cal-nav-btn" onclick="nextPeriod()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="cal-weekdays">
+              <div class="cal-weekday weekend">Sun</div>
+              <div class="cal-weekday">Mon</div>
+              <div class="cal-weekday">Tue</div>
+              <div class="cal-weekday">Wed</div>
+              <div class="cal-weekday">Thu</div>
+              <div class="cal-weekday">Fri</div>
+              <div class="cal-weekday weekend">Sat</div>
+            </div>
+
+            <div id="calendarBody">
+              <div style="padding:40px;text-align:center;color:var(--text-muted);display:flex;align-items:center;justify-content:center;gap:10px">
+                <div style="width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite"></div>
+                Loading calendar…
+              </div>
+            </div>
+
+            <div class="cal-footer">
+              <div class="cal-legend">
+                <div class="leg-item"><div class="leg-dot" style="background:var(--gold)"></div>Pending</div>
+                <div class="leg-item"><div class="leg-dot" style="background:var(--success)"></div>Scheduled</div>
+                <div class="leg-item"><div class="leg-dot" style="background:#818cf8"></div>Completed</div>
+                <div class="leg-item"><div class="leg-dot" style="background:var(--danger)"></div>Cancelled</div>
+              </div>
+              <div style="font-size:11px;color:var(--text-muted)" id="calSummaryFooter">Loading…</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="cal-sidebar">
+          <!-- Today Card -->
+          <div class="today-card">
+            <div class="today-card-label">Today</div>
+            <div class="today-card-date" id="todayCardDate">—</div>
+            <div class="today-card-sub" id="todayCardSub">—</div>
+            <div class="today-stats">
+              <div class="ts-item"><div class="ts-val" id="todayCount">0</div><div class="ts-lbl">Bookings</div></div>
+              <div class="ts-item"><div class="ts-val" id="todayPending">0</div><div class="ts-lbl">Pending</div></div>
+              <div class="ts-item"><div class="ts-val" id="todayConfirmed">0</div><div class="ts-lbl">Scheduled</div></div>
+            </div>
+          </div>
+
+          <!-- Month Summary -->
+          <div class="month-summary-card">
+            <div class="summary-title">Month Summary</div>
+            <div class="summary-row"><span class="summary-label"><span>📋</span> Total Bookings</span><span class="summary-val gold" id="sumTotal">0</span></div>
+            <div class="summary-row"><span class="summary-label"><span>⏳</span> Pending</span><span class="summary-val gold" id="sumPending">0</span></div>
+            <div class="summary-row"><span class="summary-label"><span>📅</span> Scheduled</span><span class="summary-val green" id="sumConfirmed">0</span></div>
+            <div class="summary-row"><span class="summary-label"><span>🏁</span> Completed</span><span class="summary-val" id="sumCompleted" style="color:#a5b4fc">0</span></div>
+            <div class="summary-row"><span class="summary-label"><span>❌</span> Cancelled</span><span class="summary-val red" id="sumCancelled">0</span></div>
+          </div>
+
+          <!-- Day Panel -->
+          <div class="day-panel-card">
+            <div class="day-panel-header">
+              <div>
+                <div class="day-panel-title" id="dayPanelTitle">Select a Date</div>
+                <div class="day-panel-sub" id="dayPanelSub">Click any day to view bookings</div>
+              </div>
+              <a href="contractor_bookings.html" class="btn btn-xs btn-outline-gold" id="addForDayBtn" style="display:none">View All</a>
+            </div>
+            <div class="day-panel-body" id="dayPanelBody">
+              <div class="empty-day">
+                <span class="empty-day-icon">📅</span>
+                <div class="empty-day-title">No date selected</div>
+                <div class="empty-day-sub">Click a day on the calendar to see its bookings.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="toast-container"></div>
+
+<!-- Event Detail Modal -->
+<div class="modal-overlay" id="eventDetailModal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <div class="modal-title" id="detailModalTitle">Booking Details</div>
+      <button class="modal-close" onclick="closeModal('eventDetailModal')">✕</button>
+    </div>
+    <div id="eventDetailBody"></div>
+    <div class="modal-footer" id="eventDetailFooter"></div>
+  </div>
+</div>
+
+<!-- Logout Modal -->
+<div class="modal-overlay" id="logoutModal">
+  <div class="modal" style="max-width:360px;text-align:center">
+    <div style="font-size:44px;margin-bottom:12px">🚪</div>
+    <div class="modal-title" style="text-align:center;margin-bottom:8px">Log Out?</div>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:22px">You will be returned to the login screen.</p>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="btn btn-secondary" onclick="closeModal('logoutModal')">Stay</button>
+      <button class="btn btn-maroon" onclick="confirmLogout()">Yes, Log Out</button>
+    </div>
+  </div>
+</div>
+
+<script src="contractor.js"></script>
+<script>
+/* ============================================================
+   CONTRACTOR CALENDAR — DB-connected logic
+   Data source: api/contractor.php?action=calendar
+   ============================================================ */
+
+const todayObj     = new Date();
+let   viewDate     = new Date(todayObj);
+let   currentView  = 'month';
+let   selectedDateKey = null;
+let   searchQuery  = '';
+
+// All bookings loaded for the current month/week
+let EVENTS = [];   // [{id, booking_ref, service, scheduled_date, scheduled_time, status, amount, address, progress, client_name}]
+
+/* ── Helpers ─────────────────────────────────────────────── */
+function todayKey() { return todayObj.toISOString().split('T')[0]; }
+function toDateKey(y, m, d) { return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
+
+function formatDisplayDate(dk) {
+  return new Date(dk+'T00:00:00').toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+}
+function formatShortDate(dk) {
+  return new Date(dk+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+}
+function fmt12(t) {
+  if (!t) return '—';
+  const [h,m] = (t||'00:00').split(':').map(Number);
+  return `${h%12||12}:${String(m).padStart(2,'0')} ${h>=12?'PM':'AM'}`;
+}
+function getEndTime(t, hrs) {
+  const [h,m] = (t||'00:00').split(':').map(Number);
+  const total = h*60 + m + (hrs||1)*60;
+  const eh = Math.floor(total/60)%24, em = total%60;
+  return fmt12(`${String(eh).padStart(2,'0')}:${String(em).padStart(2,'0')}`);
+}
+
+function eventsForDate(dk) {
+  let evts = EVENTS.filter(e => e.scheduled_date === dk);
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    evts = evts.filter(e =>
+      (e.service||'').toLowerCase().includes(q) ||
+      (e.client_name||'').toLowerCase().includes(q) ||
+      (e.booking_ref||'').toLowerCase().includes(q)
+    );
+  }
+  return evts.sort((a,b) => (a.scheduled_time||'').localeCompare(b.scheduled_time||''));
+}
+
+function statusDotClass(status) {
+  return { pending:'dot-gold', scheduled:'dot-green', in_progress:'dot-blue', completed:'dot-blue', cancelled:'dot-maroon' }[status] || 'dot-gold';
+}
+
+function statusBadge(status) {
+  const map = {
+    pending:     '<span class="badge badge-warning badge-dot">Pending</span>',
+    scheduled:   '<span class="badge badge-success badge-dot">Scheduled</span>',
+    in_progress: '<span class="badge badge-info badge-dot">In Progress</span>',
+    completed:   '<span class="badge badge-info badge-dot">Completed</span>',
+    cancelled:   '<span class="badge badge-danger badge-dot">Cancelled</span>',
+  };
+  return map[status] || '';
+}
+
+function serviceIcon(service) {
+  const s = (service||'').toLowerCase();
+  if (s.includes('electric')) return '⚡';
+  if (s.includes('plumb'))    return '🔧';
+  if (s.includes('carpentr')) return '🪚';
+  if (s.includes('paint'))    return '🎨';
+  if (s.includes('ac')||s.includes('hvac')||s.includes('aircon')) return '❄️';
+  if (s.includes('roof'))     return '🏠';
+  if (s.includes('tile'))     return '🪟';
+  if (s.includes('clean'))    return '🧹';
+  return '🔩';
+}
+
+/* ── Data Loading ────────────────────────────────────────── */
+async function loadCalendarData() {
+  const month = viewDate.getMonth() + 1;
+  const year  = viewDate.getFullYear();
+  try {
+    EVENTS = await apiFetch(`api/contractor.php?action=calendar&month=${month}&year=${year}`);
+  } catch(e) {
+    EVENTS = [];
+    showToast('Could not load calendar data', 'warning');
+  }
+  renderCalendar();
+  updateTodayStats();
+  if (selectedDateKey) selectDate(selectedDateKey);
+}
+
+/* ── Today Stats ─────────────────────────────────────────── */
+function updateTodayStats() {
+  const evts = EVENTS.filter(e => e.scheduled_date === todayKey());
+  document.getElementById('todayCount').textContent     = evts.length;
+  document.getElementById('todayPending').textContent   = evts.filter(e=>e.status==='pending').length;
+  document.getElementById('todayConfirmed').textContent = evts.filter(e=>e.status==='scheduled').length;
+}
+
+/* ── Month Summary ───────────────────────────────────────── */
+function updateMonthSummary() {
+  document.getElementById('sumTotal').textContent     = EVENTS.length;
+  document.getElementById('sumPending').textContent   = EVENTS.filter(e=>e.status==='pending').length;
+  document.getElementById('sumConfirmed').textContent = EVENTS.filter(e=>e.status==='scheduled').length;
+  document.getElementById('sumCompleted').textContent = EVENTS.filter(e=>e.status==='completed'||e.status==='in_progress').length;
+  document.getElementById('sumCancelled').textContent = EVENTS.filter(e=>e.status==='cancelled').length;
+  document.getElementById('calSummaryFooter').textContent =
+    `${EVENTS.length} booking${EVENTS.length===1?'':'s'} this ${currentView==='week'?'week':'month'}`;
+}
+
+/* ── Render Calendar ─────────────────────────────────────── */
+function renderCalendar() {
+  const y = viewDate.getFullYear();
+  const m = viewDate.getMonth();
+  document.getElementById('calMonthLabel').textContent = viewDate.toLocaleDateString('en-US',{month:'long'});
+  document.getElementById('calYearSub').textContent    = y;
+  if (currentView === 'month') renderMonthView(y, m);
+  else                         renderWeekView();
+  updateMonthSummary();
+}
+
+/* ── Month View ──────────────────────────────────────────── */
+function renderMonthView(year, month) {
+  const body     = document.getElementById('calendarBody');
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInM  = new Date(year, month+1, 0).getDate();
+  const daysInPM = new Date(year, month, 0).getDate();
+  document.querySelector('.cal-weekdays').style.display = 'grid';
+
+  let html = '<div class="cal-grid fade-swap">';
+
+  for (let i = firstDay-1; i >= 0; i--) {
+    html += `<div class="cal-day other-month"><span class="day-num">${daysInPM-i}</span></div>`;
+  }
+  for (let d = 1; d <= daysInM; d++) {
+    const key   = toDateKey(year, month, d);
+    const evts  = EVENTS.filter(e => e.scheduled_date === key);
+    const isT   = key === todayKey();
+    const isSel = key === selectedDateKey;
+    let cls     = 'cal-day' + (isT?' today':'') + (isSel?' selected':'');
+    let dots    = evts.slice(0,3).map(e=>`<div class="evt-dot ${statusDotClass(e.status)}"></div>`).join('');
+    if (evts.length > 3) dots += `<div class="dot-more">+${evts.length-3}</div>`;
+    html += `<div class="${cls}" onclick="selectDate('${key}')" title="${evts.length} booking${evts.length===1?'':'s'}">
+      <span class="day-num">${d}</span>
+      <div class="dot-wrap">${dots}</div>
+    </div>`;
+  }
+  const totalCells = firstDay + daysInM;
+  const remaining  = totalCells%7===0 ? 0 : 7-(totalCells%7);
+  for (let d = 1; d <= remaining; d++) {
+    html += `<div class="cal-day other-month"><span class="day-num">${d}</span></div>`;
+  }
+  html += '</div>';
+  body.innerHTML = html;
+}
+
+/* ── Week View ───────────────────────────────────────────── */
+function renderWeekView() {
+  const body = document.getElementById('calendarBody');
+  document.querySelector('.cal-weekdays').style.display = 'none';
+
+  const dow   = viewDate.getDay();
+  const start = new Date(viewDate);
+  start.setDate(viewDate.getDate() - dow);
+  const days  = Array.from({length:7}, (_, i) => { const d=new Date(start); d.setDate(start.getDate()+i); return d; });
+
+  const s = days[0].toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  const e = days[6].toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  document.getElementById('calMonthLabel').textContent = `${s} – ${e}`;
+
+  const DAYS_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const HOURS = ['06','07','08','09','10','11','12','13','14','15','16','17','18','19','20'];
+
+  let html = '<div class="week-view fade-swap">';
+  html += '<div class="week-header-row"><div></div>';
+  days.forEach(d => {
+    const dk  = d.toISOString().split('T')[0];
+    const isT = dk === todayKey();
+    const iS  = dk === selectedDateKey;
+    html += `<div class="week-header-cell ${isT?'today':''}" style="${iS?'border-bottom:2px solid var(--gold)':''}" onclick="selectDate('${dk}')">
+      <div class="week-header-day-num">${d.getDate()}</div>
+      <div class="week-header-day-name">${DAYS_SHORT[d.getDay()]}</div>
+    </div>`;
+  });
+  html += '</div>';
+
+  HOURS.forEach(hr => {
+    html += `<div class="week-row"><div class="week-time-col">${parseInt(hr)%12||12}${parseInt(hr)>=12?'PM':'AM'}</div>`;
+    days.forEach(d => {
+      const dk   = d.toISOString().split('T')[0];
+      const isT  = dk === todayKey();
+      const evts = EVENTS.filter(e => e.scheduled_date===dk && (e.scheduled_time||'').startsWith(hr));
+      const cells= evts.map(e=>`<div class="week-evt status-${e.status}" onclick="openEventDetail(${e.id})" title="${e.service}">${serviceIcon(e.service)} ${escapeHtml(e.service||'')}</div>`).join('');
+      html += `<div class="week-cell ${isT?'today-col':''}" onclick="selectDate('${dk}')">${cells}</div>`;
+    });
+    html += '</div>';
+  });
+  html += '</div>';
+  body.innerHTML = html;
+}
+
+/* ── View Switch / Nav ───────────────────────────────────── */
+function switchView(view, btn) {
+  currentView = view;
+  document.querySelectorAll('.view-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  loadCalendarData();
+}
+function prevPeriod() {
+  if (currentView==='month') viewDate.setMonth(viewDate.getMonth()-1);
+  else viewDate.setDate(viewDate.getDate()-7);
+  loadCalendarData();
+}
+function nextPeriod() {
+  if (currentView==='month') viewDate.setMonth(viewDate.getMonth()+1);
+  else viewDate.setDate(viewDate.getDate()+7);
+  loadCalendarData();
+}
+function jumpToToday() {
+  viewDate = new Date(todayObj);
+  loadCalendarData().then(() => selectDate(todayKey()));
+  showToast('Jumped to today','info');
+}
+
+/* ── Select Date ─────────────────────────────────────────── */
+function selectDate(dk) {
+  selectedDateKey = dk;
+  renderCalendar();
+  renderDayPanel(dk);
+  document.getElementById('selectedDateLabel').textContent = `Viewing: ${formatDisplayDate(dk)}`;
+  document.getElementById('dayPanelTitle').textContent     = formatShortDate(dk);
+  const evts = eventsForDate(dk);
+  document.getElementById('dayPanelSub').textContent = `${evts.length} booking${evts.length===1?'':'s'} scheduled`;
+  document.getElementById('addForDayBtn').style.display = 'flex';
+}
+
+/* ── Day Panel ───────────────────────────────────────────── */
+function renderDayPanel(dk) {
+  const body = document.getElementById('dayPanelBody');
+  const evts = eventsForDate(dk);
+
+  if (!evts.length) {
+    body.innerHTML = `<div class="empty-day">
+      <span class="empty-day-icon">🗓️</span>
+      <div class="empty-day-title">No bookings on this day</div>
+      <div class="empty-day-sub" style="margin-top:8px">Bookings assigned by admin will appear here.</div>
+    </div>`;
+    return;
+  }
+
+  body.innerHTML = evts.map(e => `
+    <div class="event-item status-${e.status}" onclick="openEventDetail(${e.id})">
+      <div class="event-time-col">
+        <div class="event-time">${fmt12(e.scheduled_time)}</div>
+        <div class="event-time-line"></div>
+        <div class="event-duration">${e.progress||0}%</div>
+      </div>
+      <div class="event-body">
+        <div class="event-name">${serviceIcon(e.service)} ${escapeHtml(e.service||'')}</div>
+        <div class="event-client">👤 ${escapeHtml(e.client_name||'—')}</div>
+        <div class="event-meta">
+          ${statusBadge(e.status)}
+          <span class="event-tag">${escapeHtml(e.booking_ref||'')}</span>
+          ${e.address ? `<span class="event-tag">📍 ${escapeHtml(e.address.split(',')[0])}</span>` : ''}
+        </div>
+      </div>
+      <div class="event-actions">
+        <a href="contractor_bookings.html" class="btn btn-icon btn-xs btn-outline-gold" title="Go to Booking">📋</a>
+      </div>
+    </div>`).join('');
+}
+
+/* ── Event Detail Modal ──────────────────────────────────── */
+function openEventDetail(id) {
+  const e = EVENTS.find(x => x.id == id);
+  if (!e) return;
+
+  document.getElementById('detailModalTitle').textContent = e.service || 'Booking Details';
+  document.getElementById('eventDetailBody').innerHTML = `
+    <div class="evt-modal-icon">${serviceIcon(e.service)}</div>
+    <div style="font-size:15px;font-weight:600;color:var(--white);margin-bottom:4px">${escapeHtml(e.service||'')}</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">📋 ${escapeHtml(e.booking_ref||'')}</div>
+    ${statusBadge(e.status)}
+    <div class="evt-modal-info">
+      <div class="emi-item"><div class="emi-label">Client</div><div class="emi-value">👤 ${escapeHtml(e.client_name||'—')}</div></div>
+      <div class="emi-item"><div class="emi-label">Date</div><div class="emi-value">📅 ${e.scheduled_date ? formatDisplayDate(e.scheduled_date) : '—'}</div></div>
+      <div class="emi-item"><div class="emi-label">Time</div><div class="emi-value">🕐 ${fmt12(e.scheduled_time)}</div></div>
+      <div class="emi-item"><div class="emi-label">Progress</div><div class="emi-value">📊 ${e.progress||0}%</div></div>
+      <div class="emi-item"><div class="emi-label">Amount</div><div class="emi-value">💰 ${formatCurrency(e.amount)}</div></div>
+      ${e.address ? `<div class="emi-item" style="grid-column:1/-1"><div class="emi-label">Address</div><div class="emi-value">📍 ${escapeHtml(e.address)}</div></div>` : ''}
+    </div>`;
+
+  document.getElementById('eventDetailFooter').innerHTML = `
+    <button class="btn btn-secondary" onclick="closeModal('eventDetailModal')">Close</button>
+    <a href="contractor_bookings.html" class="btn btn-primary">📋 Manage Booking</a>`;
+
+  openModal('eventDetailModal');
+}
+
+/* ── Search ──────────────────────────────────────────────── */
+function handleSearch(val) {
+  searchQuery = val.trim();
+  if (selectedDateKey) renderDayPanel(selectedDateKey);
+  if (searchQuery) {
+    const results = EVENTS.filter(e =>
+      (e.service||'').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (e.client_name||'').toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    document.getElementById('calSummaryFooter').textContent = `${results.length} result${results.length===1?'':'s'} found`;
+  } else {
+    updateMonthSummary();
+  }
+}
+
+/* ── Init ────────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', () => {
+  // Header date
+  document.getElementById('headerDateChip').textContent =
+    todayObj.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+  document.getElementById('todayCardDate').textContent =
+    todayObj.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  document.getElementById('todayCardSub').textContent =
+    todayObj.toLocaleDateString('en-US',{year:'numeric'});
+
+  // Close modals on overlay click
+  document.querySelectorAll('.modal-overlay').forEach(o => {
+    o.addEventListener('click', e => { if(e.target===o) o.classList.remove('open'); });
+  });
+
+  // Auth check happens in contractor.js DOMContentLoaded
+  // Load data after auth is confirmed
+  setTimeout(async () => {
+    await loadCalendarData();
+    selectDate(todayKey());
+  }, 400);
+});
+</script>
+</body>
+</html>

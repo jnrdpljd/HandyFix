@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Profile — HandyFix Client</title>
+  <link rel="stylesheet" href="shared.css"/>
+  <style>
+    .profile-hero { background:linear-gradient(135deg,var(--maroon-dark) 0%,rgba(107,5,4,0.3) 60%,var(--surface) 100%); border:1px solid var(--border); border-radius:var(--radius-xl); padding:28px 32px; margin-bottom:24px; display:flex; align-items:center; gap:24px; flex-wrap:wrap; position:relative; overflow:hidden; }
+    .hero-av { width:90px;height:90px;border-radius:50%;background:linear-gradient(135deg,var(--maroon),var(--maroon-dark));display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700;color:var(--gold);border:3px solid var(--gold);flex-shrink:0; }
+    .info-row { display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-soft); }
+    .info-row:last-child { border-bottom:none; }
+    .info-label { font-size:12px;color:var(--text-muted); }
+    .info-value { font-size:13px;font-weight:600;color:var(--text-primary); }
+    .icon-btn { background:transparent; border:none; font-size:20px; cursor:pointer; padding:5px; border-radius:50%; transition:background 0.2s; }
+    .icon-btn:hover { background:var(--surface-2); }
+    @keyframes hfSpin { to{transform:rotate(360deg);} }
+  </style>
+</head>
+<body>
+<div class="portal-layout">
+  <main class="main-content" id="mainContent">
+    <header class="top-header">
+      <div class="header-left">
+        <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+        <div><div class="page-title">My Profile</div><div class="breadcrumb">Manage your account details</div></div>
+      </div>
+      
+      <div class="header-right" style="display:flex; align-items:center; gap:15px;">
+        <div class="notif-wrapper" style="position:relative;">
+          <button class="icon-btn" onclick="toggleNotifications()">🔔<span id="notifBadge" class="badge badge-danger" style="display:none;position:absolute;top:-2px;right:-2px;font-size:10px;padding:2px 5px">!</span></button>
+          <div id="notifDropdown" style="display:none; position:absolute; right:0; top:45px; width:320px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); box-shadow:0 10px 25px rgba(0,0,0,0.2); z-index:100; overflow:hidden;">
+             <div style="padding:12px 16px; font-weight:700; border-bottom:1px solid var(--border-soft); background:var(--surface-2)">Activity Log</div>
+             <div id="notifList" style="max-height:300px; overflow-y:auto; padding:10px;">Loading...</div>
+          </div>
+        </div>
+        <button class="theme-toggle-btn">☀️</button>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <div class="profile-hero" id="profileHero">
+        <div style="display:flex;align-items:center;gap:10px;color:var(--text-muted)">
+          <div style="width:18px;height:18px;border:2px solid var(--border-soft);border-top-color:var(--gold);border-radius:50%;animation:hfSpin 0.8s linear infinite"></div>
+          Loading profile…
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <div class="card mb-6">
+            <div class="card-header">
+              <div class="card-title"><span class="card-title-icon">👤</span> Personal Information</div>
+              <button class="btn btn-sm btn-secondary" onclick="toggleForm()">✏️ Edit</button>
+            </div>
+            <div id="infoView"><div style="padding:20px;text-align:center;color:var(--text-muted)">Loading…</div></div>
+            <form id="infoForm" style="display:none" onsubmit="saveInfo(event)">
+              <div class="form-row">
+                <div class="form-group"><label class="form-label">First Name *</label><input class="form-input" type="text" id="fFirst" required/></div>
+                <div class="form-group"><label class="form-label">Last Name *</label><input class="form-input" type="text" id="fLast" required/></div>
+              </div>
+              <div class="form-group"><label class="form-label">Phone</label><input class="form-input" type="tel" id="fPhone"/></div>
+              <div class="form-group"><label class="form-label">Address</label><input class="form-input" type="text" id="fAddress"/></div>
+              <div style="display:flex;gap:10px;justify-content:flex-end">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="toggleForm(false)">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-sm" id="saveInfoBtn">💾 Save</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="card mb-6">
+            <div class="card-header">
+              <div class="card-title"><span class="card-title-icon">📍</span> Saved Addresses</div>
+              <button class="btn btn-sm btn-secondary" onclick="openModal('addressModal')">+ Add Address</button>
+            </div>
+            <div id="addressList">
+                <div style="padding:20px;text-align:center;color:var(--text-muted)">Loading addresses...</div>
+            </div>
+          </div>
+
+          <div class="card mb-6">
+            <div class="card-header"><div class="card-title"><span class="card-title-icon">🔑</span> Change Password</div></div>
+            <form onsubmit="changePass(event)">
+              <div class="form-group"><label class="form-label">Current Password</label><input class="form-input" type="password" id="curPass" placeholder="••••••••"/></div>
+              <div class="form-group"><label class="form-label">New Password *</label><input class="form-input" type="password" id="newPass" placeholder="Min. 8 characters"/></div>
+              <div class="form-group"><label class="form-label">Confirm New</label><input class="form-input" type="password" id="conPass" placeholder="Repeat password"/></div>
+              <button type="submit" class="btn btn-primary btn-sm" id="passBtn">Update Password</button>
+            </form>
+          </div>
+        </div>
+
+        <div>
+          <div class="card mb-6">
+            <div class="card-header"><div class="card-title"><span class="card-title-icon">📊</span> Account Summary</div></div>
+            <div id="statsSummary"><div style="padding:20px;text-align:center;color:var(--text-muted)">Loading…</div></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><div class="card-title"><span class="card-title-icon">🔔</span> Notification Preferences</div></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border-soft)">
+              <div><div style="font-size:13px;font-weight:600;color:var(--text-primary)">Email Updates</div><div style="font-size:11.5px;color:var(--text-muted)">Get booking confirmations via email</div></div>
+              <label class="toggle-switch"><input type="checkbox" checked onchange="HF.showToast('Preference saved','success',2000)"/><span class="toggle-slider"></span></label>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border-soft)">
+              <div><div style="font-size:13px;font-weight:600;color:var(--text-primary)">SMS Alerts</div><div style="font-size:11.5px;color:var(--text-muted)">Receive SMS when contractor is assigned</div></div>
+              <label class="toggle-switch"><input type="checkbox" onchange="HF.showToast('Preference saved','success',2000)"/><span class="toggle-slider"></span></label>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border-soft)">
+              <div><div style="font-size:13px;font-weight:600;color:var(--text-primary)">App Notifications</div><div style="font-size:11.5px;color:var(--text-muted)">In-app alerts for all activities</div></div>
+              <label class="toggle-switch"><input type="checkbox" checked onchange="HF.showToast('Preference saved','success',2000)"/><span class="toggle-slider"></span></label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="modal-overlay" id="addressModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Add New Address</div>
+      <button class="modal-close" onclick="closeModal('addressModal')">×</button>
+    </div>
+    <form onsubmit="saveAddress(event)">
+      <div class="form-group">
+        <label class="form-label">Label (e.g., Home, Office)</label>
+        <input type="text" id="addrLabel" class="form-input" required placeholder="Home" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Full Address</label>
+        <textarea id="addrFull" class="form-input" rows="3" required placeholder="123 Main St..."></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary w-full" id="saveAddrBtn">Save Address</button>
+    </form>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="shared.js"></script>
+<script src="client_sidebar.js"></script>
+<script>
+let profileData = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+  buildClientSidebar('client_profile.html');
+  setTimeout(loadProfile, 500);
+  loadAddresses();
+  loadNotifications();
+});
+
+/* --- Notifications Logic --- */
+async function loadNotifications() {
+  const list = document.getElementById('notifList');
+  const badge = document.getElementById('notifBadge');
+  try {
+    const data = await hfFetch('api/client.php?action=notifications');
+    if (data.length > 0) badge.style.display = 'block';
+    
+    list.innerHTML = data.length === 0 ? '<div style="text-align:center;padding:10px;color:var(--text-muted)">No recent activity.</div>' : 
+      data.map(n => `
+        <div style="display:flex;gap:12px;padding:10px;border-bottom:1px solid var(--border-soft);">
+            <div style="font-size:18px;">${n.icon||'🔔'}</div>
+            <div>
+                <div style="font-size:13px;font-weight:600;color:${n.color||'var(--text-primary)'}">${HF.escapeHtml(n.action)}</div>
+                <div style="font-size:12px;color:var(--text-muted)">${HF.escapeHtml(n.detail)}</div>
+            </div>
+        </div>
+    `).join('');
+  } catch(e) { list.innerHTML = '<div style="color:var(--danger);padding:10px">Failed to load notifications.</div>'; }
+}
+
+function toggleNotifications() {
+  const dd = document.getElementById('notifDropdown');
+  dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+  if(dd.style.display === 'block') document.getElementById('notifBadge').style.display = 'none'; 
+}
+
+document.addEventListener('click', e => {
+  if(!e.target.closest('.notif-wrapper')) document.getElementById('notifDropdown').style.display = 'none';
+});
+
+/* --- Address Logic --- */
+async function loadAddresses() {
+  try {
+    const addresses = await hfFetch('api/client.php?action=addresses');
+    const container = document.getElementById('addressList');
+    if(addresses.length === 0) {
+        container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">No addresses saved yet.</div>';
+        return;
+    }
+    container.innerHTML = addresses.map(a => `
+      <div class="info-row" style="align-items:flex-start">
+        <div>
+          <span class="badge badge-success" style="margin-bottom:4px;display:inline-block">${HF.escapeHtml(a.label)}</span>
+          <div class="info-value" style="font-weight:400">${HF.escapeHtml(a.address)}</div>
+        </div>
+        <button class="btn btn-sm btn-secondary" onclick="deleteAddress(${a.id})" style="color:var(--danger); border-color:transparent">🗑️</button>
+      </div>
+    `).join('');
+  } catch(e) { HF.showToast('Failed to load addresses','error'); }
+}
+
+async function saveAddress(e) {
+  e.preventDefault();
+  const btn = document.getElementById('saveAddrBtn');
+  btn.textContent = 'Saving...'; btn.disabled = true;
+  try {
+    await hfFetch('api/client.php?action=add_address', 'POST', {
+      label: document.getElementById('addrLabel').value,
+      address: document.getElementById('addrFull').value
+    });
+    closeModal('addressModal');
+    e.target.reset();
+    HF.showToast('Address saved!','success');
+    loadAddresses();
+  } catch(err) { HF.showToast(err.message, 'error'); }
+  finally { btn.textContent = 'Save Address'; btn.disabled = false; }
+}
+
+async function deleteAddress(id) {
+  if(!confirm("Delete this address?")) return;
+  try {
+    await hfFetch(`api/client.php?action=del_address&id=${id}`, 'DELETE');
+    HF.showToast('Address deleted','success');
+    loadAddresses();
+  } catch(err) { HF.showToast(err.message, 'error'); }
+}
+
+/* --- Profile Logic --- */
+async function loadProfile() {
+  try {
+    const [me, stats] = await Promise.all([ hfFetch('api/client.php?action=me'), hfFetch('api/client.php?action=stats') ]);
+    profileData = me;
+    renderHero(me, stats); renderInfoView(me); renderStats(stats); populateEditForm(me);
+  } catch(e) { HF.showToast('Failed to load profile','error'); }
+}
+
+function renderHero(me, stats) {
+  const ini = me.initials || (me.name||'').split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+  document.getElementById('profileHero').innerHTML = `
+    <div class="hero-av">${HF.escapeHtml(ini)}</div>
+    <div style="flex:1">
+      <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--text-primary)">${HF.escapeHtml(me.name)}</div>
+      <div style="font-size:12px;color:var(--gold);font-weight:600;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px">Client</div>
+      <div style="display:flex;gap:20px;flex-wrap:wrap">
+        <div><div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--white)">${stats.total}</div><div style="font-size:10px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.6px">Bookings</div></div>
+        <div><div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--white)">${stats.completed}</div><div style="font-size:10px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.6px">Completed</div></div>
+        <div><div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--white)">${HF.formatCurrency(stats.total_spent).replace('.00','')}</div><div style="font-size:10px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.6px">Spent</div></div>
+      </div>
+    </div>
+    <span class="badge ${me.status==='active'?'badge-success':'badge-muted'}">● ${me.status}</span>`;
+}
+
+function renderInfoView(me) {
+  // UPDATED: Safely format dates for Safari and iOS by replacing the space with a 'T'
+  const safeDate = me.created_at ? me.created_at.replace(' ', 'T') : null;
+  
+  document.getElementById('infoView').innerHTML = [
+    ['Full Name', me.name], 
+    ['Email', me.email], 
+    ['Phone', me.phone || '—'], 
+    ['Primary Address', me.address || '—'],
+    ['Member Since', HF.formatDate(safeDate)],
+  ].map(([k,v])=>`<div class="info-row"><span class="info-label">${k}</span><span class="info-value">${HF.escapeHtml(String(v))}</span></div>`).join('');
+}
+
+function renderStats(s) {
+  document.getElementById('statsSummary').innerHTML = [
+    ['📋 Total Bookings', s.total, 'var(--text-primary)'],
+    ['⏳ Pending',        s.pending, 'var(--gold)'],
+    ['🔄 Active',         s.active, '#818cf8'],
+    ['✅ Completed',      s.completed, 'var(--success)'],
+    ['❌ Cancelled',      s.cancelled, 'var(--danger)'],
+    ['💰 Total Spent',    HF.formatCurrency(s.total_spent), 'var(--gold)'],
+  ].map(([k,v,c])=>`<div class="info-row"><span class="info-label">${k}</span><span class="info-value" style="color:${c}">${v}</span></div>`).join('');
+}
+
+function populateEditForm(me) {
+  const parts = (me.name||'').split(' ');
+  document.getElementById('fFirst').value   = parts[0] || '';
+  document.getElementById('fLast').value    = parts.slice(1).join(' ') || '';
+  document.getElementById('fPhone').value   = me.phone || '';
+  document.getElementById('fAddress').value = me.address || '';
+}
+
+function toggleForm(show = true) {
+  document.getElementById('infoView').style.display = show ? 'none' : '';
+  document.getElementById('infoForm').style.display = show ? '' : 'none';
+}
+
+async function saveInfo(e) {
+  e.preventDefault();
+  const btn = document.getElementById('saveInfoBtn'); btn.textContent='Saving…'; btn.disabled=true;
+  try {
+    await hfFetch('api/client.php?action=profile', 'PUT', {
+      name:    document.getElementById('fFirst').value.trim() + ' ' + document.getElementById('fLast').value.trim(),
+      phone:   document.getElementById('fPhone').value.trim(),
+      address: document.getElementById('fAddress').value.trim(),
+    });
+    HF.showToast('Profile updated!','success'); toggleForm(false); loadProfile();
+  } catch(err) { HF.showToast(err.message||'Update failed','error'); }
+  finally { btn.textContent='💾 Save'; btn.disabled=false; }
+}
+
+async function changePass(e) {
+  e.preventDefault();
+  const np = document.getElementById('newPass').value;
+  if(np.length < 8 || np !== document.getElementById('conPass').value) { HF.showToast('Invalid password','error'); return; }
+  try {
+    await hfFetch('api/client.php?action=password','PUT',{current_password:document.getElementById('curPass').value, new_password:np});
+    HF.showToast('Password updated!','success'); e.target.reset();
+  } catch(err) { HF.showToast(err.message, 'error'); }
+}
+</script>
+</body>
+</html>

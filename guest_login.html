@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Log In — HandyFix</title>
+  <link rel="stylesheet" href="shared.css"/>
+  <style>
+    body { background:var(--off-black); display:flex; flex-direction:column; min-height:100vh; }
+    .auth-nav { height:64px; background:var(--surface); border-bottom:1px solid var(--border-soft); display:flex; align-items:center; justify-content:space-between; padding:0 5%; flex-shrink:0; }
+    .nav-brand { display:flex;align-items:center;gap:10px;text-decoration:none; }
+    .nav-brand-text { font-family:'Playfair Display',serif; font-size:17px; font-weight:700; color:var(--gold); }
+    .auth-wrap { flex:1; display:flex; align-items:center; justify-content:center; padding:40px 20px; }
+    .auth-card { background:var(--surface); border:1px solid var(--border-soft); border-radius:var(--radius-xl); padding:38px 36px; width:100%; max-width:420px; box-shadow:var(--shadow); }
+    .auth-title { font-family:'Playfair Display',serif; font-size:26px; font-weight:700; color:var(--text-primary); margin-bottom:4px; }
+    .auth-sub { font-size:13px; color:var(--text-muted); margin-bottom:28px; }
+    .err-box { background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); border-radius:var(--radius); padding:11px 14px; font-size:13px; color:#ef4444; margin-bottom:14px; display:none; }
+    .ok-box  { background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.3); border-radius:var(--radius); padding:11px 14px; font-size:13px; color:#22c55e; margin-bottom:14px; display:none; }
+    .pw-wrap { position:relative; }
+    .pw-wrap input { padding-right:42px; }
+    .pw-eye { position:absolute; right:12px; top:50%; transform:translateY(-50%); cursor:pointer; color:var(--text-muted); border:none; background:none; font-size:16px; }
+    .divider { text-align:center; position:relative; margin:20px 0; color:var(--text-dim); font-size:12px; }
+    .divider::before,.divider::after { content:''; position:absolute; top:50%; width:42%; height:1px; background:var(--border-soft); }
+    .divider::before { left:0; } .divider::after { right:0; }
+    .auth-footer { text-align:center; margin-top:20px; font-size:13px; color:var(--text-muted); }
+    .auth-footer a { color:var(--gold); font-weight:600; }
+    .role-hint { display:flex; align-items:center; gap:8px; padding:10px 14px; background:var(--surface-2); border:1px solid var(--border-soft); border-radius:var(--radius); margin-bottom:16px; font-size:12px; color:var(--text-muted); }
+  </style>
+</head>
+<body>
+<nav class="auth-nav">
+  <a href="guest_index.html" class="nav-brand">
+    <div class="logo-mark">HF</div>
+    <div class="nav-brand-text">HandyFix</div>
+  </a>
+  <div style="display:flex;align-items:center;gap:10px">
+    <button class="theme-toggle-btn">☀️</button>
+    <span style="font-size:13px;color:var(--text-muted)">No account?</span>
+    <a href="guest_registration.html" class="btn btn-primary btn-sm">Sign Up</a>
+  </div>
+</nav>
+
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+      <div class="logo-mark">HF</div>
+      <div>
+        <div class="auth-title">Welcome back</div>
+        <div class="auth-sub">Sign in to your HandyFix account</div>
+      </div>
+    </div>
+
+    <div class="role-hint">
+      🔑 Works for <strong style="color:var(--gold)">Clients</strong>, <strong style="color:var(--gold)">Contractors</strong> &amp; <strong style="color:var(--gold)">Admins</strong> — just enter your email &amp; password.
+    </div>
+
+    <div class="err-box" id="errBox"></div>
+    <div class="ok-box"  id="okBox"></div>
+
+    <div class="form-group">
+      <label class="form-label">Email Address</label>
+      <input class="form-input" type="email" id="loginEmail" placeholder="you@email.com" autocomplete="email"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <div class="pw-wrap">
+        <input class="form-input" type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password"/>
+        <button type="button" class="pw-eye" onclick="togglePw('loginPass')">👁</button>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-muted);cursor:pointer">
+        <input type="checkbox" id="rememberMe"/> Remember me
+      </label>
+      <a href="guest_forgot.html" style="font-size:13px;color:var(--gold);font-weight:600">Forgot password?</a>
+    </div>
+
+    <button class="btn btn-primary w-full btn-lg" id="loginBtn" onclick="doLogin()">Log In →</button>
+
+    <div class="divider">or</div>
+    <a href="guest_registration.html" class="btn btn-secondary w-full" style="justify-content:center">Create a New Account</a>
+
+    <div class="auth-footer">
+      New to HandyFix? <a href="guest_registration.html">Sign up free →</a>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="shared.js"></script>
+<script>
+// Redirect if already logged in
+(async () => {
+  try {
+    const d = await hfFetch('api/auth.php?action=me');
+    if (d && d.user) redirect(d.user.role);
+  } catch(_) {}
+})();
+
+function redirect(role) {
+  const map = { admin:'admin_dashboard.html', contractor:'contractor_dashboard.html', client:'client_home.html' };
+  window.location.href = map[role] || 'guest_index.html';
+}
+
+function togglePw(id) {
+  const el = document.getElementById(id);
+  el.type = el.type === 'password' ? 'text' : 'password';
+}
+
+function showErr(msg) {
+  const e = document.getElementById('errBox');
+  e.textContent = msg; e.style.display = 'block';
+  document.getElementById('okBox').style.display = 'none';
+}
+function showOk(msg) {
+  const e = document.getElementById('okBox');
+  e.textContent = msg; e.style.display = 'block';
+  document.getElementById('errBox').style.display = 'none';
+}
+
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass  = document.getElementById('loginPass').value;
+  const btn   = document.getElementById('loginBtn');
+  document.getElementById('errBox').style.display = 'none';
+
+  if (!email || !pass) { showErr('Please enter your email and password.'); return; }
+
+  btn.textContent = 'Signing in…'; btn.disabled = true;
+
+  try {
+    const data = await hfFetch('api/auth.php?action=login', 'POST', { email, password: pass });
+    if (data.success) {
+      showOk('Login successful! Redirecting…');
+      setTimeout(() => redirect(data.role), 700);
+    }
+  } catch(e) {
+    showErr(e.message || 'Login failed. Please check your credentials.');
+    btn.textContent = 'Log In →'; btn.disabled = false;
+  }
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+</script>
+</body>
+</html>

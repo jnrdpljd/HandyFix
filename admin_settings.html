@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Settings — HandyFix Admin</title>
+  <link rel="stylesheet" href="shared.css"/>
+  <style>
+    .settings-grid { display:grid; grid-template-columns:220px 1fr; gap:20px; align-items:start; }
+    .settings-nav { background:var(--surface); border:1px solid var(--border-soft); border-radius:var(--radius-lg); padding:8px; position:sticky; top:80px; }
+    .settings-nav-item { display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius);cursor:pointer;font-size:13px;font-weight:500;color:var(--text-secondary);transition:all var(--transition);border:1px solid transparent; }
+    .settings-nav-item:hover { background:var(--surface-2);color:var(--text-primary); }
+    .settings-nav-item.active { background:linear-gradient(135deg,rgba(107,5,4,0.35),rgba(107,5,4,0.15));border-color:rgba(230,175,46,0.2);color:var(--text-primary); }
+    .settings-section { background:var(--surface); border:1px solid var(--border-soft); border-radius:var(--radius-lg); padding:24px; }
+    .settings-section + .settings-section { margin-top:16px; }
+    .settings-title { font-family:'Playfair Display',serif; font-size:16px; font-weight:700; color:var(--text-primary); margin-bottom:4px; }
+    .settings-subtitle { font-size:12px; color:var(--text-muted); margin-bottom:20px; }
+    .field-row { display:flex; justify-content:space-between; align-items:center; padding:14px 0; border-bottom:1px solid var(--border-soft); gap:20px; }
+    .field-row:last-child { border-bottom:none; }
+    .field-label { font-size:13px; font-weight:600; color:var(--text-primary); }
+    .field-desc  { font-size:11.5px; color:var(--text-muted); margin-top:2px; }
+    .toggle-switch { position:relative;width:40px;height:22px;flex-shrink:0; }
+    .toggle-switch input { opacity:0;width:0;height:0; }
+    .toggle-slider { position:absolute;cursor:pointer;inset:0;background:var(--surface-3);border-radius:22px;transition:0.3s;border:1px solid var(--border); }
+    .toggle-slider:before { content:'';position:absolute;width:16px;height:16px;left:2px;bottom:2px;background:#fff;border-radius:50%;transition:0.3s; }
+    input:checked + .toggle-slider { background:var(--maroon); border-color:var(--maroon); }
+    input:checked + .toggle-slider:before { transform:translateX(18px); }
+    @keyframes spin { to { transform:rotate(360deg); } }
+  </style>
+</head>
+<body>
+<div class="portal-layout">
+  <main class="main-content" id="mainContent">
+    <header class="top-header">
+      <div class="header-left">
+        <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+        <div><div class="page-title">Settings</div><div class="breadcrumb">System and account configuration</div></div>
+      </div>
+      <div class="header-right">
+        <div class="header-chip" id="headerDate">—</div>
+        <button class="theme-toggle-btn">☀️</button>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <div class="settings-grid">
+        <!-- Nav -->
+        <div class="settings-nav">
+          <div class="settings-nav-item active" onclick="showSection('account')">👤 Account</div>
+          <div class="settings-nav-item" onclick="showSection('security')">🔒 Security</div>
+          <div class="settings-nav-item" onclick="showSection('platform')">⚙️ Platform</div>
+          <div class="settings-nav-item" onclick="showSection('notifications')">🔔 Notifications</div>
+          <div class="settings-nav-item" onclick="showSection('appearance')">🎨 Appearance</div>
+          <div class="settings-nav-item" onclick="showSection('database')">🗄️ Database</div>
+        </div>
+
+        <!-- Sections -->
+        <div>
+          <!-- Account -->
+          <div class="settings-section" id="sec-account">
+            <div class="settings-title">Account Profile</div>
+            <div class="settings-subtitle">Update your admin account information</div>
+            <div id="accountForm">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+                <div><label class="form-label">Full Name</label><input class="form-input w-full" id="aName" placeholder="Loading…"/></div>
+                <div><label class="form-label">Email</label><input class="form-input w-full" id="aEmail" type="email" placeholder="Loading…"/></div>
+                <div><label class="form-label">Phone</label><input class="form-input w-full" id="aPhone" placeholder="+63 9XX XXX XXXX"/></div>
+                <div><label class="form-label">Address</label><input class="form-input w-full" id="aAddress" placeholder="Location"/></div>
+              </div>
+              <button class="btn btn-primary" onclick="saveAccount()">💾 Save Changes</button>
+            </div>
+          </div>
+
+          <!-- Security -->
+          <div class="settings-section" id="sec-security" style="display:none">
+            <div class="settings-title">Security</div>
+            <div class="settings-subtitle">Change your password</div>
+            <div style="display:grid;gap:12px;max-width:400px">
+              <div><label class="form-label">Current Password</label><input class="form-input w-full" id="pwCurrent" type="password" placeholder="••••••••"/></div>
+              <div><label class="form-label">New Password</label><input class="form-input w-full" id="pwNew" type="password" placeholder="Min 8 characters"/></div>
+              <div><label class="form-label">Confirm New Password</label><input class="form-input w-full" id="pwConfirm" type="password" placeholder="Repeat password"/></div>
+              <button class="btn btn-primary" style="width:fit-content" onclick="changePassword()">🔒 Update Password</button>
+            </div>
+          </div>
+
+          <!-- Platform -->
+          <div class="settings-section" id="sec-platform" style="display:none">
+            <div class="settings-title">Platform Settings</div>
+            <div class="settings-subtitle">Configure booking and service behavior</div>
+            <div class="field-row">
+              <div><div class="field-label">Allow New Client Registrations</div><div class="field-desc">When off, no new clients can sign up</div></div>
+              <label class="toggle-switch"><input type="checkbox" id="togRegistrations" checked onchange="saveSetting('allow_registrations',this.checked)"/><span class="toggle-slider"></span></label>
+            </div>
+            <div class="field-row">
+              <div><div class="field-label">Auto-assign Contractors</div><div class="field-desc">Automatically match available contractor to new bookings</div></div>
+              <label class="toggle-switch"><input type="checkbox" id="togAutoAssign" onchange="saveSetting('auto_assign',this.checked)"/><span class="toggle-slider"></span></label>
+            </div>
+            <div class="field-row">
+              <div><div class="field-label">Require Admin Approval for New Contractors</div><div class="field-desc">Contractors must be verified before accepting jobs</div></div>
+              <label class="toggle-switch"><input type="checkbox" id="togContractorApproval" checked onchange="saveSetting('contractor_approval',this.checked)"/><span class="toggle-slider"></span></label>
+            </div>
+            <div class="field-row">
+              <div><div class="field-label">Maintenance Mode</div><div class="field-desc">Show a maintenance message to all users</div></div>
+              <label class="toggle-switch"><input type="checkbox" id="togMaintenance" onchange="saveSetting('maintenance_mode',this.checked)"/><span class="toggle-slider"></span></label>
+            </div>
+          </div>
+
+          <!-- Notifications -->
+          <div class="settings-section" id="sec-notifications" style="display:none">
+            <div class="settings-title">Notifications</div>
+            <div class="settings-subtitle">Control what you are notified about</div>
+            <div class="field-row">
+              <div><div class="field-label">New Booking Requests</div><div class="field-desc">Notify when a new booking comes in</div></div>
+              <label class="toggle-switch"><input type="checkbox" checked/><span class="toggle-slider"></span></label>
+            </div>
+            <div class="field-row">
+              <div><div class="field-label">Booking Cancellations</div><div class="field-desc">Notify when a client cancels a booking</div></div>
+              <label class="toggle-switch"><input type="checkbox" checked/><span class="toggle-slider"></span></label>
+            </div>
+            <div class="field-row">
+              <div><div class="field-label">New Contractor Registration</div><div class="field-desc">Notify on new contractor sign-up</div></div>
+              <label class="toggle-switch"><input type="checkbox" checked/><span class="toggle-slider"></span></label>
+            </div>
+            <div class="field-row">
+              <div><div class="field-label">Job Completions</div><div class="field-desc">Notify when a job is marked complete</div></div>
+              <label class="toggle-switch"><input type="checkbox"/><span class="toggle-slider"></span></label>
+            </div>
+          </div>
+
+          <!-- Appearance -->
+          <div class="settings-section" id="sec-appearance" style="display:none">
+            <div class="settings-title">Appearance</div>
+            <div class="settings-subtitle">Customize your admin portal look</div>
+            <div class="field-row">
+              <div><div class="field-label">Theme</div><div class="field-desc">Currently: <span id="themeLabel">Dark</span></div></div>
+              <button class="btn btn-secondary btn-sm" onclick="HF.toggleTheme();document.getElementById('themeLabel').textContent=HF.state.theme.charAt(0).toUpperCase()+HF.state.theme.slice(1)">Toggle Theme</button>
+            </div>
+            <div class="field-row">
+              <div><div class="field-label">Collapsed Sidebar</div><div class="field-desc">Start with a compact sidebar</div></div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="togSidebar" onchange="localStorage.setItem('hfSidebarCollapsed',this.checked)"/>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Database -->
+          <div class="settings-section" id="sec-database" style="display:none">
+            <div class="settings-title">Database Info</div>
+            <div class="settings-subtitle">Connection and table overview</div>
+            <div id="dbInfo"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="toast-container"></div>
+<script src="shared.js"></script>
+<script src="admin_sidebar.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  buildAdminSidebar('admin_settings.html');
+  const user = await HF.checkAuth();
+  if (user) {
+    document.getElementById('aName').value    = user.name    || '';
+    document.getElementById('aEmail').value   = user.email   || '';
+  }
+  document.getElementById('togSidebar').checked = localStorage.getItem('hfSidebarCollapsed') === 'true';
+  document.getElementById('themeLabel').textContent = HF.state.theme.charAt(0).toUpperCase()+HF.state.theme.slice(1);
+  loadDbInfo();
+});
+
+function showSection(id) {
+  document.querySelectorAll('.settings-section').forEach(s => s.style.display='none');
+  document.querySelectorAll('.settings-nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('sec-'+id).style.display='';
+  event.currentTarget.classList.add('active');
+}
+
+async function saveAccount() {
+  const payload = {
+    name:    document.getElementById('aName').value.trim(),
+    email:   document.getElementById('aEmail').value.trim(),
+    phone:   document.getElementById('aPhone').value.trim(),
+    address: document.getElementById('aAddress').value.trim(),
+  };
+  if (!payload.name || !payload.email) { HF.showToast('Name and email are required','warning'); return; }
+  HF.showToast('Profile update requires backend endpoint — coming soon','info');
+}
+
+async function changePassword() {
+  const current = document.getElementById('pwCurrent').value;
+  const newPw   = document.getElementById('pwNew').value;
+  const confirm = document.getElementById('pwConfirm').value;
+  if (!current || !newPw) { HF.showToast('Fill in all password fields','warning'); return; }
+  if (newPw !== confirm)  { HF.showToast('Passwords do not match','error'); return; }
+  if (newPw.length < 8)   { HF.showToast('Password must be at least 8 characters','warning'); return; }
+  HF.showToast('Password change requires backend endpoint — coming soon','info');
+}
+
+function saveSetting(key, value) {
+  // Persist settings in localStorage for now; a settings table can be added later
+  localStorage.setItem('hf_setting_'+key, value);
+  HF.showToast('Setting saved.','success');
+}
+
+async function loadDbInfo() {
+  const el = document.getElementById('dbInfo');
+  el.innerHTML = HF.loadingHTML();
+  try {
+    const d = await HF.apiFetch('api/db_info.php');
+    el.innerHTML = d.tables.map(t=>`
+      <div class="field-row">
+        <div><div class="field-label">📋 ${t.name}</div><div class="field-desc">${t.rows} rows</div></div>
+        <span style="font-size:11px;color:var(--text-muted)">${t.engine}</span>
+      </div>`).join('') +
+      `<div style="margin-top:14px;padding:10px;background:var(--surface-2);border-radius:var(--radius);font-size:12px;color:var(--text-muted)">
+        Database: <strong style="color:var(--gold)">${d.database}</strong> · Host: <strong>${d.host}</strong>
+      </div>`;
+  } catch(_) {
+    el.innerHTML = `<div style="padding:14px;background:var(--surface-2);border-radius:var(--radius);font-size:12px;color:var(--text-muted)">
+      Connected to <strong style="color:var(--gold)">handyfix</strong> database via phpMyAdmin.<br>
+      All tables are live — import <code>database.sql</code> if tables are missing.
+    </div>`;
+  }
+}
+</script>
+</body>
+</html>

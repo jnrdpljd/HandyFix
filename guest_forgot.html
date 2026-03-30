@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Forgot Password — HandyFix</title>
+  <link rel="stylesheet" href="shared.css"/>
+  <style>
+    body { background:var(--off-black); display:flex; flex-direction:column; min-height:100vh; }
+    .auth-nav { height:64px; background:var(--surface); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 5%; flex-shrink:0; }
+    .nav-brand { display:flex;align-items:center;gap:10px;text-decoration:none; }
+    .nav-brand-text { font-family:'Playfair Display',serif; font-size:17px; font-weight:700; color:var(--gold); }
+    .auth-wrap { flex:1; display:flex; align-items:center; justify-content:center; padding:40px 20px; }
+    .auth-card { background:var(--surface); border:1px solid var(--border-soft); border-radius:var(--radius-xl); padding:36px; width:100%; max-width:420px; box-shadow:var(--shadow); }
+    .step { display:none; } .step.active { display:block; animation:pageFadeIn 0.3s ease; }
+    .step-ind { display:flex; align-items:center; gap:8px; margin-bottom:24px; }
+    .s-dot { width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:2px solid var(--border-soft);color:var(--text-muted);transition:all var(--transition); }
+    .s-dot.active { border-color:var(--gold);background:var(--gold);color:#1A0A00; }
+    .s-dot.done   { border-color:var(--success);background:rgba(34,197,94,0.15);color:var(--success); }
+    .s-line { flex:1;height:2px;background:var(--border-soft);border-radius:99px;transition:background var(--transition); }
+    .s-line.done { background:var(--gold); }
+  </style>
+</head>
+<body>
+<nav class="auth-nav">
+  <a href="Guest_index.html" class="nav-brand">
+    <div class="logo-mark">HF</div>
+    <div class="nav-brand-text">HandyFix</div>
+  </a>
+  <div style="display:flex;align-items:center;gap:8px">
+    <button class="theme-toggle-btn">☀️</button>
+    <a href="Guest_login.html" class="btn btn-secondary btn-sm">← Back to Login</a>
+  </div>
+</nav>
+
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <div class="logo-mark">HF</div>
+      <div>
+        <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--text-primary)">Forgot Password</div>
+        <div style="font-size:13px;color:var(--text-muted)">We'll help you get back in</div>
+      </div>
+    </div>
+
+    <!-- Step indicator -->
+    <div class="step-ind">
+      <div class="s-dot active" id="sd1">1</div>
+      <div class="s-line" id="sl1"></div>
+      <div class="s-dot" id="sd2">2</div>
+      <div class="s-line" id="sl2"></div>
+      <div class="s-dot" id="sd3">✓</div>
+    </div>
+
+    <!-- Step 1: Email -->
+    <div class="step active" id="step1">
+      <div style="text-align:center;margin-bottom:22px">
+        <div style="font-size:40px;margin-bottom:10px">📧</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:6px">Enter your email</div>
+        <div style="font-size:12.5px;color:var(--text-muted)">We'll send a 6-digit reset code to your registered email.</div>
+      </div>
+      <form onsubmit="sendCode(event)">
+        <div class="form-group">
+          <label class="form-label">Email Address <span class="required">*</span></label>
+          <input class="form-input" type="email" id="resetEmail" placeholder="you@email.com" required autocomplete="email"/>
+        </div>
+        <button type="submit" class="btn btn-primary w-full" id="sendBtn">Send Reset Code →</button>
+      </form>
+    </div>
+
+    <!-- Step 2: OTP -->
+    <div class="step" id="step2">
+      <div style="text-align:center;margin-bottom:22px">
+        <div style="font-size:40px;margin-bottom:10px">🔑</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:6px">Enter the 6-digit code</div>
+        <div style="font-size:12.5px;color:var(--text-muted)" id="codeSentTo">Code sent to your email</div>
+      </div>
+      <form onsubmit="verifyCode(event)">
+        <div class="form-group">
+          <input class="form-input" type="text" id="resetCode" maxlength="6" placeholder="• • • • • •"
+            style="text-align:center;font-size:24px;font-weight:700;letter-spacing:8px" required
+            oninput="this.value=this.value.replace(/\D/g,'')"/>
+        </div>
+        <div style="text-align:center;margin-bottom:14px">
+          <button type="button" class="btn btn-xs btn-secondary" id="resendBtn" onclick="resendCode()">Resend Code</button>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button type="button" class="btn btn-secondary" onclick="goToStep(1)">← Back</button>
+          <button type="submit" class="btn btn-primary" style="flex:1">Verify Code →</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Step 3: New Password -->
+    <div class="step" id="step3">
+      <div style="text-align:center;margin-bottom:22px">
+        <div style="font-size:40px;margin-bottom:10px">🔒</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:6px">Set a new password</div>
+        <div style="font-size:12.5px;color:var(--text-muted)">Choose a strong password for your account.</div>
+      </div>
+      <form onsubmit="resetPassword(event)">
+        <div class="form-group">
+          <label class="form-label">New Password <span class="required">*</span></label>
+          <div style="position:relative">
+            <input class="form-input" type="password" id="newPass" placeholder="Min. 8 characters" required oninput="checkStr(this.value)" style="padding-right:42px"/>
+            <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--text-muted)" onclick="toggleP('newPass')">👁</span>
+          </div>
+          <div style="height:4px;border-radius:99px;background:var(--surface-3);margin-top:6px;overflow:hidden"><div id="strBar" style="height:100%;border-radius:99px;width:0;background:var(--danger);transition:all var(--transition)"></div></div>
+          <div class="form-hint" id="strLabel">Enter a password</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Confirm Password <span class="required">*</span></label>
+          <div style="position:relative">
+            <input class="form-input" type="password" id="conPass" placeholder="Repeat password" required style="padding-right:42px"/>
+            <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--text-muted)" onclick="toggleP('conPass')">👁</span>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary w-full">Reset Password ✓</button>
+      </form>
+    </div>
+
+    <!-- Step 4: Done -->
+    <div class="step" id="step4">
+      <div style="text-align:center;padding:20px 0">
+        <div style="font-size:56px;margin-bottom:16px">🎉</div>
+        <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--text-primary);margin-bottom:8px">Password Reset!</div>
+        <div style="font-size:13px;color:var(--text-muted);margin-bottom:28px;line-height:1.6">Your password has been changed successfully. You can now log in with your new password.</div>
+        <a href="Guest_login.html" class="btn btn-primary btn-lg w-full">Go to Login →</a>
+      </div>
+    </div>
+
+    <div style="text-align:center;margin-top:20px;font-size:13px;color:var(--text-muted)">
+      Remember your password? <a href="Guest_login.html" style="color:var(--gold);font-weight:600">Log In →</a>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="shared.js"></script>
+<script>
+/*
+ DB: POST /api/auth/forgot-password → sends OTP to email
+     POST /api/auth/verify-otp      → { email, code } → returns reset_token
+     POST /api/auth/reset-password  → { reset_token, new_password }
+*/
+let currentStep = 1;
+
+function goToStep(n) {
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  document.getElementById('step'+n)?.classList.add('active');
+  [1,2,3].forEach(i => {
+    document.getElementById('sd'+i)?.classList.toggle('done',   i < n);
+    document.getElementById('sd'+i)?.classList.toggle('active', i === n);
+    if (document.getElementById('sl'+i)) document.getElementById('sl'+i).classList.toggle('done', i < n);
+  });
+  currentStep = n;
+}
+
+function sendCode(e) {
+  e.preventDefault();
+  const email = document.getElementById('resetEmail').value.trim();
+  const btn   = document.getElementById('sendBtn');
+  btn.disabled = true; btn.textContent = 'Sending…';
+  // await HF.apiPost('/auth/forgot-password', { email });
+  setTimeout(() => {
+    document.getElementById('codeSentTo').textContent = `Code sent to ${email}`;
+    goToStep(2);
+    HF.startCountdown('resendBtn', 60);
+    HF.showToast(`Reset code sent to ${email}`, 'success');
+    btn.disabled = false; btn.textContent = 'Send Reset Code →';
+  }, 800);
+}
+
+function verifyCode(e) {
+  e.preventDefault();
+  const code = document.getElementById('resetCode').value.trim();
+  if (code.length < 6) { HF.showToast('Enter the full 6-digit code', 'warning'); return; }
+  // const res = await HF.apiPost('/auth/verify-otp', { email, code });
+  goToStep(3);
+}
+
+function resendCode() {
+  HF.showToast('Code resent!', 'info');
+  HF.startCountdown('resendBtn', 60);
+}
+
+function resetPassword(e) {
+  e.preventDefault();
+  const np = document.getElementById('newPass').value;
+  const cp = document.getElementById('conPass').value;
+  if (np.length < 8) { HF.showToast('Password must be at least 8 characters', 'error'); return; }
+  if (np !== cp) { HF.showToast('Passwords do not match', 'error'); return; }
+  // await HF.apiPost('/auth/reset-password', { reset_token, new_password: np });
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  document.getElementById('step4').classList.add('active');
+  document.querySelectorAll('.s-dot').forEach(d => { d.classList.add('done'); d.classList.remove('active'); });
+  HF.showToast('Password reset successfully!', 'success');
+}
+
+function checkStr(v) {
+  let s=0; if(v.length>=8)s++; if(/[A-Z]/.test(v))s++; if(/[0-9]/.test(v))s++; if(/[^A-Za-z0-9]/.test(v))s++;
+  const l=[{w:'0%',bg:'var(--danger)',t:'Too short'},{w:'25%',bg:'var(--danger)',t:'Weak'},{w:'50%',bg:'var(--gold)',t:'Fair'},{w:'75%',bg:'#60a5fa',t:'Good'},{w:'100%',bg:'var(--success)',t:'Strong'}];
+  const lv=l[s]||l[0];
+  const b=document.getElementById('strBar'); b.style.width=lv.w; b.style.background=lv.bg;
+  document.getElementById('strLabel').textContent=lv.t;
+}
+
+function toggleP(id) { const i=document.getElementById(id); i.type=i.type==='password'?'text':'password'; }
+</script>
+</body>
+</html>

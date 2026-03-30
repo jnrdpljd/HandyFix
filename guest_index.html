@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>HandyFix — Professional Home Services</title>
+  <link rel="stylesheet" href="shared.css"/>
+  <style>
+    /* ── Guest-specific: no sidebar, uses top nav ── */
+    body { background: var(--off-black); }
+
+    /* NAV */
+    .guest-nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 900;
+      height: 68px;
+      background: rgba(13,13,13,0.92);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 5%;
+      transition: background var(--transition);
+    }
+    [data-theme="light"] .guest-nav { background: rgba(255,255,255,0.92); }
+    .nav-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .nav-brand .logo-mark { width: 38px; height: 38px; font-size: 14px; }
+    .nav-brand-text { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; color: var(--gold); }
+    .nav-brand-text span { color: var(--text-muted); font-size: 10.5px; font-family: 'DM Sans',sans-serif; display: block; font-weight: 400; letter-spacing: 1px; text-transform: uppercase; }
+    .nav-links { display: flex; align-items: center; gap: 6px; }
+    .nav-link {
+      padding: 8px 16px; border-radius: 9px;
+      font-size: 13.5px; font-weight: 500; color: var(--text-muted);
+      cursor: pointer; transition: all var(--transition);
+      text-decoration: none;
+    }
+    .nav-link:hover { color: var(--gold); background: var(--gold-dim); }
+    .nav-link.active { color: var(--text-primary); }
+    .nav-cta {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .nav-hamburger {
+      display: none; width: 36px; height: 36px; background: var(--surface-3);
+      border-radius: 8px; align-items: center; justify-content: center;
+      font-size: 17px; color: var(--text-muted); cursor: pointer;
+    }
+
+    /* HERO */
+    .hero {
+      min-height: 100vh;
+      display: flex; align-items: center;
+      padding: 100px 5% 60px;
+      position: relative; overflow: hidden;
+    }
+    .hero-bg {
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 70% 50%, rgba(107,5,4,0.35) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 60% at 20% 30%, rgba(230,175,46,0.08) 0%, transparent 60%);
+    }
+    .hero-grid-overlay {
+      position: absolute; inset: 0;
+      background-image: linear-gradient(rgba(230,175,46,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(230,175,46,0.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+    .hero-content { position: relative; z-index: 1; max-width: 600px; }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: var(--gold-dim); border: 1px solid var(--gold-border);
+      border-radius: 99px; padding: 5px 14px;
+      font-size: 11.5px; font-weight: 700; color: var(--gold);
+      text-transform: uppercase; letter-spacing: 1px;
+      margin-bottom: 22px;
+    }
+    .hero-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(38px, 6vw, 68px);
+      font-weight: 800; line-height: 1.1;
+      color: var(--text-primary);
+      margin-bottom: 22px;
+    }
+    .hero-title .accent { color: var(--gold); }
+    .hero-title .line-2 { color: var(--text-secondary); font-weight: 600; }
+    .hero-desc {
+      font-size: 16px; color: var(--text-muted); line-height: 1.75;
+      max-width: 480px; margin-bottom: 36px;
+    }
+    .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+    .hero-cta {
+      padding: 14px 32px; border-radius: 12px;
+      font-size: 15px; font-weight: 700;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      color: #1A0A00; cursor: pointer; border: none;
+      transition: all var(--transition);
+      box-shadow: 0 8px 32px rgba(230,175,46,0.3);
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .hero-cta:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(230,175,46,0.45); }
+    .hero-secondary {
+      padding: 14px 28px; border-radius: 12px;
+      font-size: 14px; font-weight: 600;
+      background: transparent; color: var(--text-secondary);
+      border: 1px solid var(--border-soft); cursor: pointer;
+      transition: all var(--transition);
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .hero-secondary:hover { border-color: var(--border); color: var(--text-primary); background: var(--surface-2); }
+    .hero-stats {
+      display: flex; gap: 32px; margin-top: 52px;
+      padding-top: 32px; border-top: 1px solid var(--border-soft);
+    }
+    .hs { text-align: center; }
+    .hs-val { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; color: var(--gold); }
+    .hs-lbl { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; margin-top: 2px; }
+
+    /* Hero visual */
+    .hero-visual {
+      position: absolute; right: 5%; top: 50%;
+      transform: translateY(-50%);
+      width: min(42vw, 480px);
+      display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+    }
+    @media(max-width:900px) { .hero-visual { display: none; } }
+    .hv-card {
+      background: var(--surface);
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-lg);
+      padding: 18px;
+      transition: all var(--transition);
+    }
+    .hv-card:hover { border-color: var(--border); transform: translateY(-4px); box-shadow: var(--shadow-gold); }
+    .hv-card:nth-child(2) { margin-top: 28px; }
+    .hv-card:nth-child(4) { margin-top: 28px; }
+    .hv-icon { font-size: 28px; margin-bottom: 10px; }
+    .hv-title { font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+    .hv-text  { font-size: 11.5px; color: var(--text-muted); line-height: 1.5; }
+
+    /* SERVICES */
+    .services-section { padding: 80px 5%; }
+    .section-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--gold-dim); border: 1px solid var(--gold-border);
+      border-radius: 99px; padding: 4px 14px;
+      font-size: 11px; font-weight: 700; color: var(--gold);
+      text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px;
+    }
+    .section-heading {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(28px,4vw,42px); font-weight: 700;
+      color: var(--text-primary); line-height: 1.2; margin-bottom: 14px;
+    }
+    .section-heading .accent { color: var(--gold); }
+    .section-desc { font-size: 14.5px; color: var(--text-muted); max-width: 520px; line-height: 1.7; margin-bottom: 48px; }
+
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+    }
+    .service-card {
+      background: var(--surface);
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-xl);
+      padding: 28px 22px;
+      cursor: pointer;
+      transition: all var(--transition);
+      position: relative; overflow: hidden;
+      text-align: center;
+    }
+    .service-card::before {
+      content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, var(--maroon), var(--gold));
+      transform: scaleX(0); transform-origin: left;
+      transition: transform var(--transition);
+    }
+    .service-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-gold); border-color: var(--border); }
+    .service-card:hover::before { transform: scaleX(1); }
+    .service-emoji { font-size: 44px; margin-bottom: 16px; display: block; transition: transform var(--transition); }
+    .service-card:hover .service-emoji { transform: scale(1.15); }
+    .service-name { font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
+    .service-desc { font-size: 12.5px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px; }
+    .service-price { font-size: 12px; font-weight: 700; color: var(--gold); }
+
+    /* HOW IT WORKS */
+    .how-section { padding: 80px 5%; background: var(--surface); border-top: 1px solid var(--border-soft); border-bottom: 1px solid var(--border-soft); }
+    .steps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 32px; margin-top: 48px; }
+    .step-item { text-align: center; position: relative; }
+    .step-item:not(:last-child)::after {
+      content: '→'; position: absolute; right: -20px; top: 24px;
+      font-size: 22px; color: var(--gold); opacity: 0.4;
+    }
+    @media(max-width:768px) { .step-item:not(:last-child)::after { display:none; } }
+    .step-num {
+      width: 52px; height: 52px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+      font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 800; color: #1A0A00;
+      margin-bottom: 16px; box-shadow: 0 8px 24px rgba(230,175,46,0.3);
+    }
+    .step-title { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
+    .step-desc { font-size: 12.5px; color: var(--text-muted); line-height: 1.6; }
+
+    /* TESTIMONIALS */
+    .testimonials-section { padding: 80px 5%; }
+    .reviews-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 48px; }
+    .review-card { background: var(--surface); border: 1px solid var(--border-soft); border-radius: var(--radius-xl); padding: 24px; transition: all var(--transition); }
+    .review-card:hover { border-color: var(--border); transform: translateY(-3px); }
+    .review-stars { color: var(--gold); font-size: 14px; margin-bottom: 12px; }
+    .review-text { font-size: 13.5px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 16px; font-style: italic; }
+    .review-author { display: flex; align-items: center; gap: 10px; }
+    .review-avatar { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg,var(--maroon),var(--maroon-dark)); display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--gold);border:2px solid var(--gold-border); }
+    .review-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+    .review-loc  { font-size: 11px; color: var(--text-muted); }
+
+    /* CTA BANNER */
+    .cta-section {
+      padding: 80px 5%;
+      background: linear-gradient(135deg, var(--maroon-dark) 0%, rgba(107,5,4,0.6) 50%, var(--off-black) 100%);
+      border-top: 1px solid rgba(107,5,4,0.4);
+      text-align: center; position: relative; overflow: hidden;
+    }
+    .cta-section::before {
+      content: ''; position: absolute;
+      top: -100px; left: 50%; transform: translateX(-50%);
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(230,175,46,0.07) 0%, transparent 70%);
+      border-radius: 50%; pointer-events: none;
+    }
+    .cta-title { font-family: 'Playfair Display', serif; font-size: clamp(28px,4vw,44px); font-weight: 800; color: var(--text-primary); margin-bottom: 14px; }
+    .cta-desc { font-size: 15px; color: var(--text-muted); margin-bottom: 36px; }
+
+    /* FOOTER */
+    .guest-footer {
+      background: var(--surface); border-top: 1px solid var(--border-soft);
+      padding: 48px 5% 28px;
+    }
+    .footer-top { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 36px; }
+    @media(max-width:768px) { .footer-top { grid-template-columns: 1fr 1fr; } }
+    @media(max-width:480px) { .footer-top { grid-template-columns: 1fr; } }
+    .footer-brand-desc { font-size: 13px; color: var(--text-muted); line-height: 1.7; margin-top: 12px; max-width: 280px; }
+    .footer-col-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 14px; }
+    .footer-link { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 8px; cursor: pointer; transition: color var(--transition); }
+    .footer-link:hover { color: var(--gold); }
+    .footer-bottom { border-top: 1px solid var(--border-soft); padding-top: 22px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+    .footer-copy { font-size: 12px; color: var(--text-dim); }
+
+    /* Mobile nav */
+    .mobile-nav-menu {
+      display: none; position: fixed; top: 68px; left: 0; right: 0;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 16px; z-index: 899;
+      flex-direction: column; gap: 4px;
+    }
+    .mobile-nav-menu.open { display: flex; animation: pageFadeIn 0.2s ease; }
+    .mobile-nav-link { padding: 11px 16px; border-radius: 10px; font-size: 14px; font-weight: 500; color: var(--text-muted); cursor: pointer; transition: all var(--transition); }
+    .mobile-nav-link:hover { color: var(--gold); background: var(--gold-dim); }
+
+    @media(max-width:640px) {
+      .nav-links { display: none; }
+      .nav-hamburger { display: flex; }
+      .hero-stats { gap: 18px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="guest-nav">
+  <a href="guest_index.html" class="nav-brand">
+    <div class="logo-mark">HF</div>
+    <div class="nav-brand-text">HandyFix<span>Professional Services</span></div>
+  </a>
+  <div class="nav-links">
+    <a href="#services" class="nav-link">Services</a>
+    <a href="#how" class="nav-link">How It Works</a>
+    <a href="#reviews" class="nav-link">Reviews</a>
+    <a href="Guest_about.html" class="nav-link">About</a>
+  </div>
+  <div class="nav-cta">
+    <button class="theme-toggle-btn" title="Toggle Theme" style="margin-right:4px">☀️</button>
+    <a href="guest_login.html" class="btn btn-secondary btn-sm">Log In</a>
+    <a href="guest_registration.html" class="btn btn-primary btn-sm">Sign Up Free</a>
+    <button class="nav-hamburger" id="navHamburger">☰</button>
+  </div>
+</nav>
+
+<!-- Mobile Menu -->
+<div class="mobile-nav-menu" id="mobileNavMenu">
+  <a href="#services" class="mobile-nav-link" onclick="closeMobileMenu()">Services</a>
+  <a href="#how" class="mobile-nav-link" onclick="closeMobileMenu()">How It Works</a>
+  <a href="#reviews" class="mobile-nav-link" onclick="closeMobileMenu()">Reviews</a>
+  <a href="guest_login.html" class="mobile-nav-link">Log In</a>
+  <a href="guest_registration.html" class="btn btn-primary btn-sm" style="margin-top:8px;justify-content:center">Sign Up Free</a>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid-overlay"></div>
+  <div class="hero-content">
+    <div class="hero-badge">⚡ Trusted by 10,000+ Homeowners</div>
+    <h1 class="hero-title">
+      Your Home,<br>
+      <span class="accent">Fixed Right.</span><br>
+      <span class="line-2">Every Time.</span>
+    </h1>
+    <p class="hero-desc">
+      HandyFix connects you with verified, skilled contractors for all your home repair and maintenance needs. Plumbing, electrical, carpentry — we've got you covered.
+    </p>
+    <div class="hero-actions">
+      <button class="hero-cta" onclick="window.location.href='guest_registration.html'">
+        🔧 Book a Service Now
+      </button>
+      <button class="hero-secondary" onclick="document.getElementById('services').scrollIntoView({behavior:'smooth'})">
+        View Services →
+      </button>
+    </div>
+    <div class="hero-stats">
+      <div class="hs"><div class="hs-val">500+</div><div class="hs-lbl">Contractors</div></div>
+      <div class="hs"><div class="hs-val">10K+</div><div class="hs-lbl">Jobs Done</div></div>
+      <div class="hs"><div class="hs-val">4.9★</div><div class="hs-lbl">Avg Rating</div></div>
+      <div class="hs"><div class="hs-val">24/7</div><div class="hs-lbl">Support</div></div>
+    </div>
+  </div>
+
+  <!-- Hero Visual Cards -->
+  <div class="hero-visual">
+    <div class="hv-card">
+      <div class="hv-icon">🔧</div>
+      <div class="hv-title">Plumbing</div>
+      <div class="hv-text">Leaks, pipes, fixtures & more</div>
+    </div>
+    <div class="hv-card">
+      <div class="hv-icon">⚡</div>
+      <div class="hv-title">Electrical</div>
+      <div class="hv-text">Wiring, panels, outlets</div>
+    </div>
+    <div class="hv-card">
+      <div class="hv-icon">🪚</div>
+      <div class="hv-title">Carpentry</div>
+      <div class="hv-text">Furniture, repairs, builds</div>
+    </div>
+    <div class="hv-card">
+      <div class="hv-icon">🏠</div>
+      <div class="hv-title">Home Care</div>
+      <div class="hv-text">Painting, cleaning, AC</div>
+    </div>
+  </div>
+</section>
+
+<!-- SERVICES -->
+<section class="services-section" id="services">
+  <div class="section-badge">⚙️ Our Services</div>
+  <h2 class="section-heading">Everything Your Home <span class="accent">Needs</span></h2>
+  <p class="section-desc">From emergency repairs to planned renovations — our vetted contractors handle it all with professionalism and care.</p>
+  <div class="services-grid">
+    <div class="service-card" onclick="window.location.href='guest_registration.html'">
+      <span class="service-emoji">🔧</span>
+      <div class="service-name">Plumbing</div>
+      <div class="service-desc">Pipe repairs, leak fixes, drainage, water heater installation, and complete plumbing systems.</div>
+      <div class="service-price">Starting at ₱500</div>
+    </div>
+    <div class="service-card" onclick="window.location.href='guest_registration.html'">
+      <span class="service-emoji">⚡</span>
+      <div class="service-name">Electrical</div>
+      <div class="service-desc">Circuit breaker, wiring, outlets, lighting, panel upgrades, and safety inspections.</div>
+      <div class="service-price">Starting at ₱800</div>
+    </div>
+    <div class="service-card" onclick="window.location.href='guest_registration.html'">
+      <span class="service-emoji">🪚</span>
+      <div class="service-name">Carpentry</div>
+      <div class="service-desc">Custom furniture, cabinets, door repairs, flooring, and structural woodwork.</div>
+      <div class="service-price">Starting at ₱600</div>
+    </div>
+    <div class="service-card" onclick="window.location.href='guest_registration.html'">
+      <span class="service-emoji">🏠</span>
+      <div class="service-name">Home Maintenance</div>
+      <div class="service-desc">Painting, deep cleaning, AC service, tile work, roofing, and general upkeep.</div>
+      <div class="service-price">Starting at ₱400</div>
+    </div>
+    <div class="service-card" onclick="window.location.href='guest_registration.html'">
+      <span class="service-emoji">🔨</span>
+      <div class="service-name">Tools & Rentals</div>
+      <div class="service-desc">Rent or borrow professional-grade tools for your DIY projects with expert guidance.</div>
+      <div class="service-price">Starting at ₱200/day</div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how-section" id="how">
+  <div style="text-align:center">
+    <div class="section-badge">✨ Simple Process</div>
+    <h2 class="section-heading">How <span class="accent">HandyFix</span> Works</h2>
+    <p class="section-desc" style="margin:0 auto 0">Book a professional in under 2 minutes.</p>
+  </div>
+  <div class="steps-grid">
+    <div class="step-item">
+      <div class="step-num">1</div>
+      <div class="step-title">Create Account</div>
+      <div class="step-desc">Sign up for free in seconds. No credit card required.</div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">2</div>
+      <div class="step-title">Choose Service</div>
+      <div class="step-desc">Browse our service categories and describe your needs.</div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">3</div>
+      <div class="step-title">Admin Assigns</div>
+      <div class="step-desc">Our admin matches you with the best available contractor.</div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">4</div>
+      <div class="step-title">Job Done!</div>
+      <div class="step-desc">Your contractor arrives and gets the job done right.</div>
+    </div>
+  </div>
+</section>
+
+<!-- REVIEWS -->
+<section class="testimonials-section" id="reviews">
+  <div class="section-badge">⭐ Testimonials</div>
+  <h2 class="section-heading">What Our <span class="accent">Clients</span> Say</h2>
+  <p class="section-desc">Thousands of happy homeowners across the Philippines.</p>
+  <div class="reviews-grid">
+    <div class="review-card">
+      <div class="review-stars">★★★★★</div>
+      <div class="review-text">"HandyFix sent someone within the hour. The plumber was professional and fixed everything perfectly. Highly recommend!"</div>
+      <div class="review-author">
+        <div class="review-avatar">MS</div>
+        <div><div class="review-name">Maria Santos</div><div class="review-loc">Quezon City</div></div>
+      </div>
+    </div>
+    <div class="review-card">
+      <div class="review-stars">★★★★★</div>
+      <div class="review-text">"Amazing service! The electrician rewired my entire second floor safely and at a very fair price. Will use again."</div>
+      <div class="review-author">
+        <div class="review-avatar">CR</div>
+        <div><div class="review-name">Carlos Reyes</div><div class="review-loc">Makati City</div></div>
+      </div>
+    </div>
+    <div class="review-card">
+      <div class="review-stars">★★★★★</div>
+      <div class="review-text">"Booking was so easy! The carpenter built exactly what I envisioned. The admin kept me updated the whole time."</div>
+      <div class="review-author">
+        <div class="review-avatar">AL</div>
+        <div><div class="review-name">Ana Lim</div><div class="review-loc">Pasig City</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA BANNER -->
+<section class="cta-section">
+  <div style="position:relative;z-index:1">
+    <div class="section-badge" style="margin:0 auto 16px">🚀 Get Started</div>
+    <h2 class="cta-title">Ready to Fix Your Home?</h2>
+    <p class="cta-desc">Join 10,000+ homeowners who trust HandyFix for all their repair needs.</p>
+    <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
+      <button class="hero-cta" onclick="window.location.href='guest_registration.html'">
+        🔧 Book a Service Now
+      </button>
+      <a href="guest_login.html" class="hero-secondary">Already have an account? Log In →</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="guest-footer">
+  <div class="footer-top">
+    <div>
+      <div class="nav-brand">
+        <div class="logo-mark">HF</div>
+        <div class="nav-brand-text">HandyFix<span>Professional Services</span></div>
+      </div>
+      <p class="footer-brand-desc">Your trusted partner for professional home repair and maintenance services across the Philippines.</p>
+    </div>
+    <div>
+      <div class="footer-col-title">Services</div>
+      <a class="footer-link">Plumbing</a>
+      <a class="footer-link">Electrical</a>
+      <a class="footer-link">Carpentry</a>
+      <a class="footer-link">Home Maintenance</a>
+      <a class="footer-link">Tools & Rentals</a>
+    </div>
+    <div>
+      <div class="footer-col-title">Company</div>
+      <a class="footer-link">About Us</a>
+      <a class="footer-link">Careers</a>
+      <a class="footer-link">Press</a>
+      <a class="footer-link">Blog</a>
+    </div>
+    <div>
+      <div class="footer-col-title">Support</div>
+      <a class="footer-link">Help Center</a>
+      <a class="footer-link">Contact Us</a>
+      <a class="footer-link">Privacy Policy</a>
+      <a class="footer-link">Terms of Service</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div class="footer-copy">© 2026 HandyFix. All rights reserved.</div>
+    <div style="font-size:12px;color:var(--text-dim)">Made with ❤️ in the Philippines</div>
+  </div>
+</footer>
+
+<div id="toast-container"></div>
+<script src="shared.js"></script>
+<script>
+  document.getElementById('navHamburger').addEventListener('click', () => {
+    document.getElementById('mobileNavMenu').classList.toggle('open');
+  });
+  function closeMobileMenu() { document.getElementById('mobileNavMenu').classList.remove('open'); }
+  // Smooth scroll for anchor links
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      const t = document.querySelector(a.getAttribute('href'));
+      if (t) { e.preventDefault(); t.scrollIntoView({behavior:'smooth'}); }
+    });
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>HandyFix — Super Admin Setup</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Segoe UI',sans-serif;background:#0a0a0a;color:#eee;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+    .wrap{width:100%;max-width:520px}
+    .logo{text-align:center;margin-bottom:32px}
+    .logo-mark{width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,#6B0504,#3a0202);display:inline-flex;align-items:center;justify-content:center;font-weight:900;font-size:20px;color:#E6AF2E;letter-spacing:-1px;margin-bottom:10px}
+    .logo h1{font-size:22px;color:#E6AF2E;font-weight:700}
+    .logo small{font-size:12px;color:#666;display:block;margin-top:2px}
+    .card{background:#141414;border:1px solid #222;border-radius:16px;padding:32px;box-shadow:0 20px 60px rgba(0,0,0,0.5)}
+    .card-title{font-size:18px;font-weight:700;color:#fff;margin-bottom:6px}
+    .card-sub{font-size:13px;color:#666;margin-bottom:24px;line-height:1.6}
+    .badge{display:inline-flex;align-items:center;gap:5px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);border-radius:99px;padding:4px 12px;font-size:11px;color:#ef4444;margin-bottom:20px}
+    label{display:block;font-size:12px;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;font-weight:600}
+    input,select{width:100%;background:#1c1c1c;border:1px solid #2a2a2a;border-radius:9px;padding:11px 14px;color:#eee;font-size:14px;outline:none;transition:border-color 0.2s;margin-bottom:16px}
+    input:focus,select:focus{border-color:#E6AF2E}
+    input::placeholder{color:#444}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+    .btn{width:100%;padding:13px;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;margin-top:4px}
+    .btn-primary{background:linear-gradient(135deg,#6B0504,#3a0202);color:#fff}
+    .btn-primary:hover{background:linear-gradient(135deg,#8a0706,#6B0504);transform:translateY(-1px)}
+    .btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+    .msg{border-radius:10px;padding:14px 16px;font-size:13px;margin-top:16px;display:none;line-height:1.6}
+    .msg.success{background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);color:#22c55e}
+    .msg.error{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#ef4444}
+    .divider{border:none;border-top:1px solid #1e1e1e;margin:28px 0}
+    .user-list{margin-top:0}
+    .user-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid #1a1a1a}
+    .user-row:last-child{border-bottom:none}
+    .user-av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#6B0504,#3a0202);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#E6AF2E;flex-shrink:0}
+    .user-name{font-size:13px;font-weight:600;color:#eee}
+    .user-meta{font-size:11px;color:#555;margin-top:1px}
+    .role-badge{padding:2px 9px;border-radius:99px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px}
+    .role-admin{background:rgba(230,175,46,0.15);color:#E6AF2E}
+    .role-contractor{background:rgba(107,5,4,0.3);color:#ff8a80}
+    .role-client{background:rgba(129,140,248,0.15);color:#818cf8}
+    .del-btn{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:7px;padding:5px 10px;font-size:11px;color:#ef4444;cursor:pointer;transition:all 0.2s}
+    .del-btn:hover{background:rgba(239,68,68,0.2)}
+    .tab-bar{display:flex;gap:4px;margin-bottom:24px;background:#0f0f0f;border:1px solid #1e1e1e;border-radius:10px;padding:4px}
+    .tab{flex:1;padding:9px;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;background:none;color:#666;transition:all 0.2s}
+    .tab.active{background:#1c1c1c;color:#E6AF2E}
+    .warn-box{background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:10px;padding:14px;font-size:12px;color:#f59e0b;line-height:1.6;margin-bottom:20px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,0.2);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;display:inline-block;vertical-align:middle;margin-right:6px}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">
+    <div class="logo-mark">HF</div>
+    <h1>HandyFix</h1>
+    <small>Super Admin Panel</small>
+  </div>
+
+  <div class="card">
+    <div class="badge">🔐 Restricted Access — Super Admin Only</div>
+
+    <div class="tab-bar">
+      <button class="tab active" onclick="showTab('add')">➕ Add Admin</button>
+      <button class="tab" onclick="showTab('users')">👥 View Users</button>
+      <button class="tab" onclick="showTab('setup')">⚙️ DB Setup</button>
+    </div>
+
+    <!-- ADD ADMIN TAB -->
+    <div id="tab-add">
+      <div class="card-title">Create Admin Account</div>
+      <div class="card-sub">Add a new admin user directly to the database. This bypasses the normal registration flow.</div>
+
+      <div class="grid">
+        <div>
+          <label>First Name *</label>
+          <input type="text" id="aFirst" placeholder="Admin"/>
+        </div>
+        <div>
+          <label>Last Name *</label>
+          <input type="text" id="aLast" placeholder="User"/>
+        </div>
+      </div>
+      <label>Email Address *</label>
+      <input type="email" id="aEmail" placeholder="admin@handyfix.com"/>
+      <label>Password *</label>
+      <input type="password" id="aPass" placeholder="Min 8 characters"/>
+      <label>Phone (optional)</label>
+      <input type="tel" id="aPhone" placeholder="+63 9XX XXX XXXX"/>
+      <label>Role *</label>
+      <select id="aRole">
+        <option value="admin">Admin</option>
+        <option value="client">Client</option>
+        <option value="contractor">Contractor (use Contractors page instead)</option>
+      </select>
+
+      <button class="btn btn-primary" id="addBtn" onclick="addAdmin()">➕ Create Account</button>
+      <div class="msg" id="addMsg"></div>
+    </div>
+
+    <!-- USERS TAB -->
+    <div id="tab-users" style="display:none">
+      <div class="card-title" style="margin-bottom:16px">All Users</div>
+      <div id="userList"><div style="text-align:center;padding:30px;color:#555">Loading…</div></div>
+    </div>
+
+    <!-- DB SETUP TAB -->
+    <div id="tab-setup" style="display:none">
+      <div class="card-title">Database Setup</div>
+      <div class="card-sub">Run this if you haven't imported database.sql yet, or if tables are missing.</div>
+      <div class="warn-box">
+        ⚠️ This will create all required tables in the <strong>handyfix</strong> database. Safe to run multiple times — uses CREATE TABLE IF NOT EXISTS.
+      </div>
+      <button class="btn btn-primary" onclick="runSetup()">🗄️ Initialize Database Tables</button>
+      <div class="msg" id="setupMsg"></div>
+
+      <div style="margin-top:24px">
+        <div class="card-title" style="font-size:14px;margin-bottom:14px">Quick Admin Reset</div>
+        <div style="font-size:13px;color:#666;margin-bottom:14px">Reset the default admin account password to <code style="color:#E6AF2E">Admin@123</code>:</div>
+        <button class="btn btn-primary" onclick="resetAdmin()">🔑 Reset Default Admin</button>
+        <div class="msg" id="resetMsg"></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:20px;font-size:12px;color:#333">
+    ⚠️ Delete this file (super_admin.php is the backend) after production setup
+  </div>
+</div>
+
+<script>
+let currentTab = 'add';
+
+function showTab(tab) {
+  ['add','users','setup'].forEach(t => {
+    document.getElementById('tab-'+t).style.display = t===tab ? '' : 'none';
+  });
+  document.querySelectorAll('.tab').forEach((el, i) => {
+    el.classList.toggle('active', ['add','users','setup'][i] === tab);
+  });
+  currentTab = tab;
+  if (tab === 'users') loadUsers();
+}
+
+function showMsg(id, msg, type) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = 'msg ' + type;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 7000);
+}
+
+async function addAdmin() {
+  const first = document.getElementById('aFirst').value.trim();
+  const last  = document.getElementById('aLast').value.trim();
+  const email = document.getElementById('aEmail').value.trim();
+  const pass  = document.getElementById('aPass').value;
+  const phone = document.getElementById('aPhone').value.trim();
+  const role  = document.getElementById('aRole').value;
+
+  if (!first || !last || !email || !pass) {
+    showMsg('addMsg', '❌ Please fill in all required fields.', 'error'); return;
+  }
+  if (pass.length < 8) {
+    showMsg('addMsg', '❌ Password must be at least 8 characters.', 'error'); return;
+  }
+
+  const btn = document.getElementById('addBtn');
+  btn.innerHTML = '<span class="spinner"></span>Creating…';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('api/super_admin.php?action=create_user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: first + ' ' + last, email, password: pass, phone, role }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      showMsg('addMsg', `✅ Account created! Email: ${email} | Role: ${role}`, 'success');
+      document.getElementById('aFirst').value = '';
+      document.getElementById('aLast').value  = '';
+      document.getElementById('aEmail').value = '';
+      document.getElementById('aPass').value  = '';
+      document.getElementById('aPhone').value = '';
+    } else {
+      showMsg('addMsg', '❌ ' + (data.error || 'Failed to create account'), 'error');
+    }
+  } catch(e) {
+    showMsg('addMsg', '❌ Network error: ' + e.message, 'error');
+  } finally {
+    btn.innerHTML = '➕ Create Account';
+    btn.disabled = false;
+  }
+}
+
+async function loadUsers() {
+  const el = document.getElementById('userList');
+  el.innerHTML = '<div style="text-align:center;padding:30px;color:#555">Loading…</div>';
+  try {
+    const res  = await fetch('api/super_admin.php?action=list_users');
+    const data = await res.json();
+    if (!data.users?.length) {
+      el.innerHTML = '<div style="text-align:center;padding:30px;color:#555">No users found. Create one above.</div>';
+      return;
+    }
+    el.innerHTML = '<div class="user-list">' + data.users.map(u => `
+      <div class="user-row">
+        <div class="user-av">${(u.name||'?').split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()}</div>
+        <div style="flex:1;min-width:0">
+          <div class="user-name">${esc(u.name)}</div>
+          <div class="user-meta">${esc(u.email)} · ${esc(u.status)}</div>
+        </div>
+        <span class="role-badge role-${u.role}">${u.role}</span>
+        ${u.role !== 'admin' ? `<button class="del-btn" onclick="deleteUser(${u.id},'${esc(u.name)}')">🗑</button>` : '<div style="width:46px"></div>'}
+      </div>`).join('') + '</div>';
+  } catch(e) {
+    el.innerHTML = '<div style="color:#ef4444;padding:20px;text-align:center">Error loading users. Check that the backend PHP is accessible.</div>';
+  }
+}
+
+async function deleteUser(id, name) {
+  if (!confirm(`Delete user "${name}"? This cannot be undone.`)) return;
+  try {
+    const res  = await fetch(`api/super_admin.php?action=delete_user&id=${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (data.success) loadUsers();
+    else alert('Error: ' + (data.error || 'Delete failed'));
+  } catch(e) { alert('Network error'); }
+}
+
+async function runSetup() {
+  const btn = event.currentTarget;
+  btn.innerHTML = '<span class="spinner"></span>Initializing…';
+  btn.disabled = true;
+  try {
+    const res  = await fetch('api/super_admin.php?action=setup_db', { method: 'POST' });
+    const data = await res.json();
+    showMsg('setupMsg', data.success ? '✅ ' + data.message : '❌ ' + data.error, data.success ? 'success' : 'error');
+  } catch(e) {
+    showMsg('setupMsg', '❌ ' + e.message, 'error');
+  } finally {
+    btn.innerHTML = '🗄️ Initialize Database Tables';
+    btn.disabled = false;
+  }
+}
+
+async function resetAdmin() {
+  try {
+    const res  = await fetch('api/super_admin.php?action=reset_admin', { method: 'POST' });
+    const data = await res.json();
+    showMsg('resetMsg', data.success ? '✅ Default admin reset! Login: admin@handyfix.com / Admin@123' : '❌ ' + data.error, data.success ? 'success' : 'error');
+  } catch(e) {
+    showMsg('resetMsg', '❌ ' + e.message, 'error');
+  }
+}
+
+function esc(s) {
+  const d = document.createElement('div'); d.textContent = String(s||''); return d.innerHTML;
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Reports — HandyFix Admin</title>
+  <link rel="stylesheet" href="shared.css"/>
+  <style>
+    .report-card { background:var(--surface); border:1px solid var(--border-soft); border-radius:var(--radius-lg); padding:22px; }
+    .chart-bar-wrap { display:flex; align-items:flex-end; gap:5px; height:120px; padding:0 4px; }
+    .chart-bar { flex:1; border-radius:5px 5px 0 0; transition:height 0.8s ease; cursor:pointer; min-width:12px; position:relative; }
+    .chart-bar:hover { filter:brightness(1.2); }
+    .bar-tip { position:absolute;bottom:calc(100%+4px);left:50%;transform:translateX(-50%);background:var(--surface-3);border:1px solid var(--border);border-radius:6px;padding:2px 8px;font-size:10px;color:var(--gold);white-space:nowrap;opacity:0;transition:opacity 0.15s;z-index:10;pointer-events:none; }
+    .chart-bar:hover .bar-tip { opacity:1; }
+    .chart-labels { display:flex; gap:5px; padding:0 4px; margin-top:4px; }
+    .chart-labels span { flex:1; text-align:center; font-size:9px; color:var(--text-dim); }
+    .donut-wrap { display:flex; align-items:center; gap:24px; flex-wrap:wrap; }
+    .donut-legend { display:flex; flex-direction:column; gap:8px; }
+    .leg-row { display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text-secondary); }
+    .leg-dot { width:10px;height:10px;border-radius:50%;flex-shrink:0; }
+    .kpi-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; }
+    .kpi { background:var(--surface-2); border:1px solid var(--border-soft); border-radius:var(--radius); padding:14px 16px; }
+    .kpi-val { font-family:'Playfair Display',serif; font-size:22px; font-weight:700; color:var(--text-primary); }
+    .kpi-label { font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.7px; margin-top:2px; }
+    .kpi-change { font-size:11px; margin-top:4px; }
+    .top-row { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--border-soft); }
+    .top-row:last-child { border-bottom:none; }
+    .top-rank { width:24px;height:24px;border-radius:6px;background:var(--gold-dim);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--gold);flex-shrink:0; }
+    .top-bar-bg { flex:1;height:6px;background:var(--surface-3);border-radius:99px;overflow:hidden; }
+    .top-bar-fill { height:100%;border-radius:99px;background:linear-gradient(90deg,var(--gold),var(--maroon));transition:width 1.2s ease; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+  </style>
+</head>
+<body>
+<div class="portal-layout">
+  <main class="main-content" id="mainContent">
+    <header class="top-header">
+      <div class="header-left">
+        <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+        <div><div class="page-title">Reports & Analytics</div><div class="breadcrumb">Business performance overview</div></div>
+      </div>
+      <div class="header-right">
+        <select class="form-input" id="periodSelect" style="width:140px;padding:6px 10px" onchange="refreshReports()">
+          <option value="month">This Month</option>
+          <option value="quarter">This Quarter</option>
+          <option value="year">This Year</option>
+        </select>
+        <button class="theme-toggle-btn">☀️</button>
+        <button class="btn btn-primary btn-sm" onclick="exportReport()">⬇ Export CSV</button>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <!-- KPIs -->
+      <div class="kpi-row mb-6" id="kpiRow">
+        <div class="kpi"><div class="kpi-val" id="kRevenue">…</div><div class="kpi-label">Total Revenue</div></div>
+        <div class="kpi"><div class="kpi-val" id="kBookings">…</div><div class="kpi-label">Total Bookings</div></div>
+        <div class="kpi"><div class="kpi-val" id="kCompletion">…</div><div class="kpi-label">Completion Rate</div></div>
+        <div class="kpi"><div class="kpi-val" id="kRating">…</div><div class="kpi-label">Avg Rating</div></div>
+        <div class="kpi"><div class="kpi-val" id="kContractors">…</div><div class="kpi-label">Active Contractors</div></div>
+        <div class="kpi"><div class="kpi-val" id="kClients">…</div><div class="kpi-label">Total Clients</div></div>
+      </div>
+
+      <div class="grid-2 mb-6">
+        <div class="report-card">
+          <div class="card-header"><div class="card-title"><span class="card-title-icon">📈</span> Revenue Trend</div></div>
+          <div id="revenueChartWrap"></div>
+        </div>
+        <div class="report-card">
+          <div class="card-header"><div class="card-title"><span class="card-title-icon">📋</span> Bookings by Month</div></div>
+          <div id="bookingsChartWrap"></div>
+        </div>
+      </div>
+
+      <div class="grid-2 mb-6">
+        <div class="report-card">
+          <div class="card-header"><div class="card-title"><span class="card-title-icon">🛠️</span> Service Breakdown</div></div>
+          <div class="donut-wrap" id="donutWrap">
+            <svg id="donutSvg" width="160" height="160" viewBox="0 0 42 42" style="flex-shrink:0"></svg>
+            <div class="donut-legend" id="donutLegend"></div>
+          </div>
+        </div>
+        <div class="report-card">
+          <div class="card-header"><div class="card-title"><span class="card-title-icon">🏆</span> Top Contractors</div></div>
+          <div id="topContractors"></div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="report-card">
+          <div class="card-header">
+            <div class="card-title"><span class="card-title-icon">💰</span> Recent Transactions</div>
+            <button class="btn btn-xs btn-secondary" onclick="exportTransactions()">⬇ CSV</button>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Booking</th><th>Client</th><th>Service</th><th>Amount</th><th>Status</th></tr></thead>
+              <tbody id="transBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="report-card">
+          <div class="card-header"><div class="card-title"><span class="card-title-icon">📊</span> Booking Status Summary</div></div>
+          <div id="statusSummary"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="toast-container"></div>
+<script src="shared.js"></script>
+<script src="admin_sidebar.js"></script>
+<script>
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DONUT_COLORS = ['#E6AF2E','#6B0504','#818cf8','#22c55e','#f59e0b','#06b6d4','#ec4899','#84cc16'];
+const STATUS_COLORS = { completed:'var(--success)', in_progress:'var(--gold)', pending:'var(--info)', scheduled:'#818cf8', cancelled:'var(--danger)' };
+
+document.addEventListener('DOMContentLoaded', async () => {
+  buildAdminSidebar('admin_reports.html');
+  await HF.checkAuth();
+  refreshReports();
+});
+
+async function refreshReports() {
+  const period = document.getElementById('periodSelect')?.value || 'month';
+  await Promise.all([
+    loadKPIs(period),
+    loadRevenueChart(),
+    loadBookingsChart(),
+    loadDonut(),
+    loadTopContractors(period),
+    loadTransactions(period),
+    loadStatusSummary(period),
+  ]);
+}
+
+async function loadKPIs(period) {
+  try {
+    const d = await HF.apiFetch(`api/reports.php?action=kpis&period=${period}`);
+    document.getElementById('kRevenue').textContent    = d.revenue >= 1000 ? '₱'+Math.round(d.revenue/1000)+'K' : HF.formatCurrency(d.revenue);
+    document.getElementById('kBookings').textContent   = d.total_bookings;
+    document.getElementById('kCompletion').textContent = d.completion_rate + '%';
+    document.getElementById('kRating').textContent     = d.avg_rating > 0 ? parseFloat(d.avg_rating).toFixed(1)+'★' : '—';
+    document.getElementById('kContractors').textContent= d.active_contractors;
+    document.getElementById('kClients').textContent    = d.total_clients;
+  } catch(e) { console.error('KPI load failed'); }
+}
+
+function makeBarChart(wrapId, data, labels, colorFn, tipFmt) {
+  const wrap = document.getElementById(wrapId);
+  if (!wrap) return;
+  if (data.every(v=>v===0)) {
+    wrap.innerHTML = HF.emptyState('📊','No data yet for this period');
+    return;
+  }
+  const max = Math.max(...data, 1);
+  let html = '<div class="chart-bar-wrap">';
+  data.forEach((v,i) => {
+    html += `<div class="chart-bar" style="height:${v/max*100}%;background:${colorFn(i,data.length)}"><div class="bar-tip">${labels[i]}: ${tipFmt(v)}</div></div>`;
+  });
+  html += '</div><div class="chart-labels">';
+  labels.forEach(l => { html += `<span>${l}</span>`; });
+  html += '</div>';
+  wrap.innerHTML = html;
+}
+
+async function loadRevenueChart() {
+  try {
+    const data = await HF.apiFetch('api/reports.php?action=revenue_chart');
+    makeBarChart('revenueChartWrap', data, MONTHS,
+      (i,n) => `hsl(${42-(i/n*15)},85%,${50+(i/n*10)}%)`,
+      v => v >= 1000 ? '₱'+Math.round(v/1000)+'K' : '₱'+v);
+  } catch(_) {}
+}
+
+async function loadBookingsChart() {
+  try {
+    const data = await HF.apiFetch('api/reports.php?action=bookings_chart');
+    makeBarChart('bookingsChartWrap', data, MONTHS,
+      () => 'linear-gradient(180deg,var(--maroon-light),var(--maroon-dark))',
+      v => v + ' bookings');
+  } catch(_) {}
+}
+
+async function loadDonut() {
+  try {
+    const services = await HF.apiFetch('api/reports.php?action=service_breakdown');
+    if (!services.length) {
+      document.getElementById('donutWrap').innerHTML = HF.emptyState('🛠️','No booking data yet');
+      return;
+    }
+    const withColors = services.map((s,i) => ({...s, color: DONUT_COLORS[i % DONUT_COLORS.length]}));
+    const r=16, cx=21, cy=21, circ=2*Math.PI*r;
+    let offset=0, paths='';
+    withColors.forEach(s => {
+      const dash = s.pct/100*circ;
+      paths += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.color}" stroke-width="6" stroke-dasharray="${dash} ${circ-dash}" stroke-dashoffset="${-offset}" transform="rotate(-90 ${cx} ${cy})"/>`;
+      offset += dash;
+    });
+    const total = services.reduce((a,s)=>a+parseInt(s.cnt),0);
+    document.getElementById('donutSvg').innerHTML = paths +
+      `<circle cx="${cx}" cy="${cy}" r="10" fill="var(--surface)"/>
+       <text x="${cx}" y="${cy-2}" text-anchor="middle" fill="var(--gold)" font-size="4" font-weight="700">${total}</text>
+       <text x="${cx}" y="${cy+5}" text-anchor="middle" fill="var(--text-muted)" font-size="2.5">Bookings</text>`;
+    document.getElementById('donutLegend').innerHTML = withColors.map(s =>
+      `<div class="leg-row"><div class="leg-dot" style="background:${s.color}"></div>${HF.escapeHtml(s.service)} <strong style="margin-left:auto;color:var(--text-primary)">${s.pct}%</strong></div>`
+    ).join('');
+  } catch(_) {}
+}
+
+async function loadTopContractors(period) {
+  const el = document.getElementById('topContractors');
+  try {
+    const rows = await HF.apiFetch(`api/reports.php?action=top_contractors&period=${period}`);
+    if (!rows.length) { el.innerHTML = HF.emptyState('🏆','No contractor data yet'); return; }
+    el.innerHTML = rows.map((c,i) => `
+      <div class="top-row">
+        <div class="top-rank">${i+1}</div>
+        <div style="flex:0 0 130px;min-width:0">
+          <div style="font-size:13px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${HF.escapeHtml(c.name)}</div>
+          <div style="font-size:11px;color:var(--text-muted)">${HF.escapeHtml(c.trade)} · ⭐${parseFloat(c.avg_rating||c.rating||0).toFixed(1)}</div>
+        </div>
+        <div class="top-bar-bg"><div class="top-bar-fill" style="width:${c.pct||0}%"></div></div>
+        <span style="font-size:11.5px;color:var(--text-muted);min-width:40px;text-align:right">${c.jobs} jobs</span>
+      </div>`).join('');
+  } catch(_) { el.innerHTML = HF.emptyState('🏆','No data'); }
+}
+
+let transactionsData = [];
+async function loadTransactions(period) {
+  try {
+    transactionsData = await HF.apiFetch(`api/reports.php?action=transactions&period=${period}`);
+    const statusMap = { completed:'badge-success', in_progress:'badge-info', cancelled:'badge-danger', pending:'badge-warning', scheduled:'badge-warning' };
+    document.getElementById('transBody').innerHTML = transactionsData.length
+      ? transactionsData.map(t => `
+          <tr>
+            <td><span class="text-gold">${HF.escapeHtml(t.booking_ref)}</span></td>
+            <td>${HF.escapeHtml(t.client)}</td>
+            <td>${HF.escapeHtml(t.service)}</td>
+            <td><span class="text-gold">${HF.formatCurrency(t.amount)}</span></td>
+            <td><span class="badge ${statusMap[t.status]||'badge-muted'}">${t.status}</span></td>
+          </tr>`).join('')
+      : '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:20px">No transactions found for this period</td></tr>';
+  } catch(_) {}
+}
+
+async function loadStatusSummary(period) {
+  const el = document.getElementById('statusSummary');
+  try {
+    const rows = await HF.apiFetch(`api/reports.php?action=status_summary&period=${period}`);
+    if (!rows.length) { el.innerHTML = HF.emptyState('📊','No booking data yet'); return; }
+    el.innerHTML = rows.map(s => `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <div style="width:10px;height:10px;border-radius:50%;background:${STATUS_COLORS[s.label.toLowerCase().replace(' ','_')]||'var(--gold)'};flex-shrink:0"></div>
+        <span style="font-size:12.5px;flex:0 0 110px;color:var(--text-secondary)">${s.label}</span>
+        <div class="progress-bar-bg" style="flex:1">
+          <div class="progress-bar-fill" style="width:${s.pct}%;background:${STATUS_COLORS[s.label.toLowerCase().replace(' ','_')]||'var(--gold)'}"></div>
+        </div>
+        <span style="font-size:12px;color:var(--text-muted);min-width:36px;text-align:right">${s.count}</span>
+      </div>`).join('');
+  } catch(_) { el.innerHTML = HF.emptyState('📊','Data unavailable'); }
+}
+
+function exportReport() {
+  exportTransactions();
+}
+
+function exportTransactions() {
+  if (!transactionsData.length) { HF.showToast('No data to export','info'); return; }
+  const rows = [
+    ['Booking','Client','Service','Amount','Status'],
+    ...transactionsData.map(t => [t.booking_ref, t.client, t.service, t.amount, t.status])
+  ];
+  HF.exportCSV(rows, 'handyfix_transactions.csv');
+  HF.showToast('Transactions exported!', 'success');
+}
+</script>
+</body>
+</html>

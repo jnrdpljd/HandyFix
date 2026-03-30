@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Assignments — HandyFix Admin</title>
+  <link rel="stylesheet" href="shared.css"/>
+  <style>
+    .asgn-card { background:var(--surface); border:1px solid var(--border-soft); border-radius:var(--radius-lg); padding:18px; margin-bottom:10px; transition:all var(--transition); }
+    .asgn-card:hover { border-color:var(--border); }
+    .asgn-id   { font-size:11px; color:var(--text-muted); margin-bottom:3px; }
+    .asgn-title{ font-size:14px; font-weight:700; color:var(--text-primary); }
+    .parties   { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:10px; margin:12px 0; padding:12px; background:var(--surface-2); border-radius:var(--radius); border:1px solid var(--border-soft); }
+    .party-av  { width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0; }
+    .party-name{ font-size:12.5px;font-weight:600;color:var(--text-primary); }
+    .party-role{ font-size:10.5px;color:var(--text-muted); }
+    .arrow     { font-size:18px;color:var(--gold);text-align:center; }
+    .prog-row  { display:flex;align-items:center;gap:10px;margin-top:10px; }
+    .prog-label{ font-size:11px;color:var(--text-muted);min-width:80px; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+  </style>
+</head>
+<body>
+<div class="portal-layout">
+  <main class="main-content" id="mainContent">
+    <header class="top-header">
+      <div class="header-left">
+        <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+        <div><div class="page-title">Assignments</div><div class="breadcrumb">Track all active contractor–client assignments</div></div>
+      </div>
+      <div class="header-right">
+        <div class="header-chip" id="headerDate">—</div>
+        <button class="theme-toggle-btn">☀️</button>
+        <div class="search-wrap"><span class="s-icon">🔍</span><input type="text" id="asgnSearch" placeholder="Search…" oninput="debounceLoad()"/></div>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:24px">
+        <div class="stat-card"><div class="stat-icon">📌</div><div class="stat-value" id="sTotal">0</div><div class="stat-label">Total Active</div></div>
+        <div class="stat-card"><div class="stat-icon">🔄</div><div class="stat-value" id="sInProg">0</div><div class="stat-label">In Progress</div></div>
+        <div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-value" id="sScheduled">0</div><div class="stat-label">Scheduled</div></div>
+        <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-value" id="sDone">0</div><div class="stat-label">Completed</div></div>
+      </div>
+
+      <div class="section-header mb-4">
+        <div class="tabs-wrapper" id="asgnTabs">
+          <button class="tab-btn active" data-tab="tab-active-asgn">Active</button>
+          <button class="tab-btn" data-tab="tab-completed-asgn">Completed</button>
+          <button class="tab-btn" data-tab="tab-cancelled-asgn">Cancelled</button>
+        </div>
+        <select class="form-input" id="asgnServiceFilter" style="width:160px;padding:7px 10px" onchange="renderLists()">
+          <option value="">All Services</option>
+          <option>Electrical</option><option>Plumbing</option>
+          <option>Carpentry</option><option>Home Maintenance</option>
+          <option>Painting</option><option>HVAC</option>
+        </select>
+      </div>
+
+      <div class="tab-panel active" id="tab-active-asgn"><div id="activeAsgnList"></div></div>
+      <div class="tab-panel" id="tab-completed-asgn"><div id="completedAsgnList"></div></div>
+      <div class="tab-panel" id="tab-cancelled-asgn"><div id="cancelledAsgnList"></div></div>
+    </div>
+  </main>
+</div>
+
+<!-- Progress Update Modal -->
+<div class="modal-overlay" id="progressModal">
+  <div class="modal" style="max-width:360px">
+    <div class="modal-header">
+      <div class="modal-title">Update Progress</div>
+      <button class="modal-close" onclick="closeModal('progressModal')">✕</button>
+    </div>
+    <div style="padding:16px 0">
+      <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:8px">Progress: <span id="progressVal">0</span>%</label>
+      <input type="range" id="progressSlider" min="0" max="100" step="5" value="0"
+             style="width:100%;accent-color:var(--gold)"
+             oninput="document.getElementById('progressVal').textContent=this.value"/>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('progressModal')">Cancel</button>
+      <button class="btn btn-primary" id="progressSaveBtn">Save Progress</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="shared.js"></script>
+<script src="admin_sidebar.js"></script>
+<script>
+let assignments = [];
+const SERVICE_ICONS = {'Electrical':'⚡','Plumbing':'🔧','Carpentry':'🪚','Painting':'🎨','Tiling':'🪟','AC':'❄️','Home Maintenance':'🏠','HVAC':'❄️'};
+const STATUS_MAP    = { scheduled:'badge-info', in_progress:'badge-warning', completed:'badge-success', cancelled:'badge-danger' };
+const STATUS_LBL    = { scheduled:'Scheduled', in_progress:'In Progress', completed:'Completed', cancelled:'Cancelled' };
+
+const debounceLoad  = HF.debounce(() => loadAssignments(), 300);
+
+document.addEventListener('DOMContentLoaded', async () => {
+  buildAdminSidebar('admin_assignments.html');
+  await HF.checkAuth();
+  initTabs();
+  loadAssignments();
+});
+
+function initTabs() {
+  document.querySelectorAll('#asgnTabs .tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#asgnTabs .tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.tab)?.classList.add('active');
+    });
+  });
+}
+
+async function loadAssignments() {
+  const q = document.getElementById('asgnSearch')?.value || '';
+  ['activeAsgnList','completedAsgnList','cancelledAsgnList'].forEach(id => {
+    document.getElementById(id).innerHTML = HF.loadingHTML();
+  });
+
+  try {
+    // Assignments = bookings that have a contractor assigned (not pending)
+    const params = new URLSearchParams({ q });
+    const all = await HF.apiFetch('api/bookings.php?' + params);
+    // Only show bookings that have a contractor
+    assignments = all.filter(b => b.contractor_id && b.status !== 'pending');
+    renderLists();
+    updateStats();
+  } catch(e) {
+    HF.showToast('Failed to load assignments', 'error');
+  }
+}
+
+function updateStats() {
+  const active = assignments.filter(a => ['scheduled','in_progress'].includes(a.status));
+  document.getElementById('sTotal').textContent     = active.length;
+  document.getElementById('sInProg').textContent    = assignments.filter(a=>a.status==='in_progress').length;
+  document.getElementById('sScheduled').textContent = assignments.filter(a=>a.status==='scheduled').length;
+  document.getElementById('sDone').textContent      = assignments.filter(a=>a.status==='completed').length;
+}
+
+function renderLists() {
+  const svc = document.getElementById('asgnServiceFilter')?.value || '';
+  const filtered = svc
+    ? assignments.filter(a => a.service?.includes(svc))
+    : assignments;
+
+  renderList('activeAsgnList',    filtered.filter(a=>['scheduled','in_progress'].includes(a.status)));
+  renderList('completedAsgnList', filtered.filter(a=>a.status==='completed'));
+  renderList('cancelledAsgnList', filtered.filter(a=>a.status==='cancelled'));
+}
+
+function getIcon(service) {
+  return Object.entries(SERVICE_ICONS).find(([k]) => service?.includes(k))?.[1] || '🔨';
+}
+
+function renderList(elId, list) {
+  const wrap = document.getElementById(elId);
+  if (!wrap) return;
+  if (!list.length) {
+    wrap.innerHTML = HF.emptyState('📌','No assignments here','Assigned bookings will appear here');
+    return;
+  }
+  wrap.innerHTML = list.map(a => `
+    <div class="asgn-card">
+      <div class="asgn-head" style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+        <div>
+          <div class="asgn-id">${HF.escapeHtml(a.booking_ref)} · 📅 ${a.scheduled_date?HF.formatDate(a.scheduled_date):'TBD'} ${a.scheduled_time?'· ⏰ '+HF.formatTime(a.scheduled_time):''}</div>
+          <div class="asgn-title">${getIcon(a.service)} ${HF.escapeHtml(a.service)}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${a.address?'📍 '+HF.escapeHtml(a.address)+' · ':''} 💰 ${HF.formatCurrency(a.amount)}</div>
+        </div>
+        <span class="badge ${STATUS_MAP[a.status]||'badge-muted'}">${STATUS_LBL[a.status]||a.status}</span>
+      </div>
+
+      <div class="parties">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="party-av" style="background:linear-gradient(135deg,#333,#1a1a1a);color:var(--gold);border:1.5px solid var(--gold-border)">${a.client_initials||'?'}</div>
+          <div><div class="party-name">${HF.escapeHtml(a.client_name||'—')}</div><div class="party-role">Client</div></div>
+        </div>
+        <div class="arrow">→</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="party-av" style="background:linear-gradient(135deg,var(--maroon),var(--maroon-dark));color:var(--gold);border:1.5px solid var(--gold-border)">${a.contractor_initials||'?'}</div>
+          <div><div class="party-name">${HF.escapeHtml(a.contractor_name||'—')}</div><div class="party-role">Contractor</div></div>
+        </div>
+      </div>
+
+      ${a.status==='in_progress' ? `
+        <div class="prog-row">
+          <span class="prog-label">Progress</span>
+          <div class="progress-bar-bg" style="flex:1"><div class="progress-bar-fill" style="width:${a.progress||0}%"></div></div>
+          <span style="font-size:11.5px;color:var(--gold);min-width:30px;text-align:right">${a.progress||0}%</span>
+          <button class="btn btn-xs btn-outline-gold" onclick="openProgress(${a.id},${a.progress||0})" style="margin-left:6px">✏️</button>
+        </div>` : ''}
+
+      ${['scheduled','in_progress'].includes(a.status) ? `
+        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+          <button class="btn btn-success btn-sm" onclick="changeStatus(${a.id},'completed')">✅ Mark Complete</button>
+          <button class="btn btn-secondary btn-sm" onclick="changeStatus(${a.id},'in_progress')">🔄 Set In Progress</button>
+          <button class="btn btn-danger btn-sm"  onclick="changeStatus(${a.id},'cancelled')">❌ Cancel</button>
+        </div>` : ''}
+    </div>`).join('');
+}
+
+async function changeStatus(id, status) {
+  if (status === 'cancelled' && !confirm('Cancel this assignment?')) return;
+  try {
+    await HF.apiFetch(`api/bookings.php?id=${id}&action=status`, 'PUT', { status });
+    HF.showToast(`Assignment ${status.replace('_',' ')}!`, 'success');
+    loadAssignments();
+  } catch(e) { HF.showToast(e.message,'error'); }
+}
+
+let progressBookingId = null;
+function openProgress(id, current) {
+  progressBookingId = id;
+  document.getElementById('progressSlider').value = current;
+  document.getElementById('progressVal').textContent = current;
+  document.getElementById('progressSaveBtn').onclick = saveProgress;
+  openModal('progressModal');
+}
+
+async function saveProgress() {
+  const p = parseInt(document.getElementById('progressSlider').value);
+  try {
+    await HF.apiFetch(`api/bookings.php?id=${progressBookingId}&action=progress`, 'PUT', { progress: p });
+    HF.showToast('Progress updated!', 'success');
+    closeModal('progressModal');
+    loadAssignments();
+  } catch(e) { HF.showToast(e.message,'error'); }
+}
+</script>
+</body>
+</html>

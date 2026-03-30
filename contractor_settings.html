@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Settings — Contractor Portal</title>
+  <link rel="stylesheet" href="contractor.css"/>
+  <style>
+    .settings-section { background:var(--surface); border:1px solid var(--border-soft); border-radius:var(--radius-lg); padding:22px; margin-bottom:20px; }
+    .settings-title { font-family:'Playfair Display',serif; font-size:15px; font-weight:700; color:var(--text-primary); margin-bottom:18px; display:flex; align-items:center; gap:8px; padding-bottom:12px; border-bottom:1px solid var(--border-soft); }
+    .rate-display { display:flex; align-items:center; gap:12px; background:var(--surface-2); border:1px solid var(--border-soft); border-radius:var(--radius); padding:12px 16px; margin-top:10px; }
+    .rate-amount { font-family:'Playfair Display',serif; font-size:26px; font-weight:700; color:var(--gold); line-height:1; }
+    .danger-zone { background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.2); border-radius:var(--radius-lg); padding:22px; margin-bottom:20px; }
+    .danger-zone-title { font-family:'Playfair Display',serif; font-size:15px; font-weight:700; color:var(--danger); margin-bottom:14px; }
+    .danger-action { display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid rgba(239,68,68,0.1); flex-wrap:wrap; gap:10px; }
+    .danger-action:last-child { border-bottom:none; }
+    .danger-action h4 { font-size:13.5px; font-weight:600; color:var(--text-primary); }
+    .danger-action p  { font-size:11.5px; color:var(--text-muted); margin-top:2px; }
+    .theme-card { border:2px solid transparent; border-radius:var(--radius); padding:16px; cursor:pointer; transition:all var(--transition); text-align:center; flex:1; }
+    .theme-card:hover { border-color:var(--gold-border); }
+    .theme-card.selected { border-color:var(--gold); box-shadow:0 0 0 3px var(--gold-dim); }
+    .notif-row { display:flex; align-items:center; gap:14px; padding:14px 0; border-bottom:1px solid var(--border-soft); }
+    .notif-row:last-child { border-bottom:none; }
+    .notif-icon { width:36px; height:36px; background:var(--gold-dim); border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+    .availability-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-top:12px; }
+    .day-chip { padding:7px 4px; text-align:center; border-radius:9px; cursor:pointer; border:1.5px solid var(--border-soft); font-size:11px; font-weight:600; color:var(--text-muted); transition:all var(--transition); user-select:none; }
+    .day-chip.active { background:var(--gold-dim); border-color:var(--gold-border); color:var(--gold); }
+  </style>
+</head>
+<body>
+<div class="portal-layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <div class="logo-mark">HF</div>
+        <div class="sidebar-logo-text"><strong>HandyFix</strong><small>Contractor Portal</small></div>
+      </div>
+      <button class="toggle-btn" id="sidebarToggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg></button>
+    </div>
+    <div class="sidebar-user">
+      <div class="user-avatar-wrap">
+        <img class="user-avatar" id="sidebarAvatar" src="" alt="" style="display:none"/>
+        <div class="user-avatar-fallback" id="sidebarAvatarFallback">?</div>
+        <span class="status-dot"></span>
+      </div>
+      <div class="user-info">
+        <div class="user-name" id="sidebarUserName">Loading…</div>
+        <div class="user-role" id="sidebarUserRole">Contractor</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+      <a href="contractor_dashboard.html" class="nav-item" data-page="contractor_dashboard.html"><span class="nav-icon">🏠</span><span class="sidebar-label">Dashboard</span><span class="nav-tooltip">Dashboard</span></a>
+      <a href="contractor_bookings.html"  class="nav-item" data-page="contractor_bookings.html"><span class="nav-icon">📋</span><span class="sidebar-label">Bookings</span><span class="nav-badge" id="bookingsBadge" style="display:none">0</span><span class="nav-tooltip">Bookings</span></a>
+      <a href="contractor_messages.html"  class="nav-item" data-page="contractor_messages.html"><span class="nav-icon">💬</span><span class="sidebar-label">Messages</span><span class="nav-badge" id="messagesBadge" style="display:none">0</span><span class="nav-tooltip">Messages</span></a>
+      <a href="contractor_calendar.html"  class="nav-item" data-page="contractor_calendar.html"><span class="nav-icon">📅</span><span class="sidebar-label">Calendar</span><span class="nav-tooltip">Calendar</span></a>
+      <div class="nav-section-label">Account</div>
+      <a href="contractor_profile.html"   class="nav-item" data-page="contractor_profile.html"><span class="nav-icon">👤</span><span class="sidebar-label">Profile</span><span class="nav-tooltip">Profile</span></a>
+      <a href="contractor_settings.html"  class="nav-item active" data-page="contractor_settings.html"><span class="nav-icon">⚙️</span><span class="sidebar-label">Settings</span><span class="nav-tooltip">Settings</span></a>
+      <div class="divider"></div>
+      <button class="nav-item nav-logout" onclick="handleLogout(event)"><span class="nav-icon">🚪</span><span class="sidebar-label">Log Out</span><span class="nav-tooltip">Log Out</span></button>
+    </nav>
+    <div class="sidebar-footer"><div class="sidebar-footer-text">HandyFix v3.0 © 2026</div></div>
+  </aside>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="main-content" id="mainContent">
+    <header class="top-header">
+      <div class="header-left">
+        <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+        <div><div class="page-title">Settings</div><div class="breadcrumb">Customize your portal experience</div></div>
+      </div>
+      <div class="header-right">
+        <div class="header-chip" id="headerDate">—</div>
+        <button class="theme-toggle-btn">☀️</button>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <div class="grid-2">
+        <div>
+          <div class="settings-section">
+            <div class="settings-title">🎨 Appearance</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px">Choose your interface theme:</div>
+            <div style="display:flex;gap:12px">
+              <div class="theme-card selected" id="darkCard" onclick="selectTheme('dark')">
+                <div style="width:100%;height:70px;border-radius:8px;background:linear-gradient(135deg,#0D0D0D,#1A1A1A);margin-bottom:10px;border:1px solid var(--border-soft)"></div>
+                <div style="font-size:13px;font-weight:600;color:var(--text-primary)">🌙 Dark Mode</div>
+              </div>
+              <div class="theme-card" id="lightCard" onclick="selectTheme('light')">
+                <div style="width:100%;height:70px;border-radius:8px;background:linear-gradient(135deg,#F4F1EB,#FFFFFF);margin-bottom:10px;border:1px solid var(--border-soft)"></div>
+                <div style="font-size:13px;font-weight:600;color:var(--text-primary)">☀️ Light Mode</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <div class="settings-title">🔔 Notifications</div>
+            <div id="notificationsContainer"></div>
+          </div>
+
+          <div class="settings-section">
+            <div class="settings-title">🔒 Privacy & Visibility</div>
+            <div id="privacyContainer"></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="settings-section">
+            <div class="settings-title">💰 Service Rate</div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Rate Type</label>
+                <select class="form-input" id="rateType" onchange="updateRatePreview()">
+                  <option value="hourly">Per Hour</option>
+                  <option value="daily">Per Day</option>
+                  <option value="fixed">Fixed Rate</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Amount (₱)</label>
+                <input class="form-input" type="number" id="rateAmount" value="350" min="0" step="50" oninput="updateRatePreview()"/>
+              </div>
+            </div>
+            <div class="rate-display">
+              <span style="font-size:22px">💰</span>
+              <div>
+                <div class="rate-amount" id="ratePreview">₱350</div>
+                <div style="font-size:12px;color:var(--text-muted);margin-top:2px" id="rateUnit">per hour</div>
+              </div>
+            </div>
+            <button class="btn btn-primary btn-sm w-full" style="margin-top:16px" onclick="saveRate()">Save Rate</button>
+          </div>
+
+          <div class="settings-section">
+            <div class="settings-title">📅 Working Days</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">Select your available days:</div>
+            <div class="availability-grid" id="availGrid"></div>
+            <div class="form-row" style="margin-top:16px">
+              <div class="form-group"><label class="form-label">Start Time</label><input class="form-input" type="time" id="startTime" value="08:00"/></div>
+              <div class="form-group"><label class="form-label">End Time</label><input class="form-input" type="time" id="endTime" value="18:00"/></div>
+            </div>
+            <button class="btn btn-primary btn-sm w-full" onclick="saveAvailability()">Save Schedule</button>
+          </div>
+
+          <div class="settings-section">
+            <div class="settings-title">🌍 Language & Region</div>
+            <div class="form-group">
+              <label class="form-label">Language</label>
+              <select class="form-input" id="lang" onchange="saveSetting('lang',this.value)">
+                <option value="en-PH" selected>English (Philippines)</option>
+                <option value="fil">Filipino (Tagalog)</option>
+                <option value="ceb">Cebuano</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Currency</label>
+              <select class="form-input" onchange="saveSetting('currency',this.value)">
+                <option value="PHP" selected>₱ Philippine Peso (PHP)</option>
+                <option value="USD">$ US Dollar (USD)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="danger-zone">
+            <div class="danger-zone-title">⚠️ Danger Zone</div>
+            <div class="danger-action">
+              <div><h4>Clear Local Data</h4><p>Remove cached settings (does not affect server data)</p></div>
+              <button class="btn btn-sm btn-danger" onclick="clearLocal()">Clear</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="modal-overlay" id="logoutModal">
+  <div class="modal" style="max-width:360px;text-align:center">
+    <div style="font-size:44px;margin-bottom:12px">🚪</div>
+    <div class="modal-title" style="text-align:center;margin-bottom:8px">Log Out?</div>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:22px">You will be returned to the login screen.</p>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="btn btn-secondary" onclick="closeModal('logoutModal')">Stay</button>
+      <button class="btn btn-maroon" onclick="confirmLogout()">Yes, Log Out</button>
+    </div>
+  </div>
+</div>
+<div id="toast-container"></div>
+<script src="contractor.js"></script>
+<script>
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+let settings = { availDays:[1,2,3,4,5], rateType:'hourly', rateAmount:350 };
+
+document.addEventListener('DOMContentLoaded', () => {
+  try { const s=localStorage.getItem('cSettings'); if(s) settings={...settings,...JSON.parse(s)}; } catch(_){}
+  
+  // Render Settings Toggles dynamically to fix hardcode bug
+  renderSettingsToggles();
+  renderAvailGrid();
+  updateRatePreview();
+  syncThemeCards();
+  
+  // Sync toggles
+  Object.entries(settings).forEach(([k,v]) => {
+    const el=document.getElementById(k);
+    if(el&&el.type==='checkbox') el.checked=!!v;
+  });
+});
+
+function renderSettingsToggles() {
+  const notifs = [
+    ['notifBookings','📋','New Booking Requests','Notify when assigned a new booking',true],
+    ['notifMessages','💬','New Messages','Alerts when clients message you',true],
+    ['notifReminders','🔔','Job Reminders','1 hour before scheduled jobs',true],
+    ['notifEmail','📧','Email Notifications','Email copies of important updates',false],
+    ['notifReviews','⭐','New Reviews','When clients leave you a review',true],
+  ];
+  
+  const privacy = [
+    ['privPublic','Show Profile Publicly','Allow clients to find your profile in search',true],
+    ['privOnline','Show Online Status','Let clients see when you\'re active',true],
+  ];
+
+  document.getElementById('notificationsContainer').innerHTML = notifs.map(([id,icon,title,desc,def])=>`
+    <div class="notif-row">
+      <div class="notif-icon">${icon}</div>
+      <div style="flex:1">
+        <div style="font-size:13.5px;font-weight:600;color:var(--text-primary)">${title}</div>
+        <div style="font-size:11.5px;color:var(--text-muted);margin-top:2px">${desc}</div>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="${id}" ${def?'checked':''} onchange="saveSetting('${id}',this.checked)"/>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>`).join('');
+
+  document.getElementById('privacyContainer').innerHTML = privacy.map(([id,title,desc,def])=>`
+    <div class="toggle-switch-wrap" style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--border-soft)">
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600;color:var(--text-primary)">${title}</div>
+        <div style="font-size:11.5px;color:var(--text-muted);margin-top:2px">${desc}</div>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="${id}" ${def?'checked':''} onchange="saveSetting('${id}',this.checked)"/>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>`).join('');
+}
+
+function selectTheme(t) { applyTheme(t); syncThemeCards(); saveSetting('theme',t); }
+function syncThemeCards() {
+  const dark=State.theme==='dark';
+  document.getElementById('darkCard')?.classList.toggle('selected',dark);
+  document.getElementById('lightCard')?.classList.toggle('selected',!dark);
+}
+
+function updateRatePreview() {
+  const type   = document.getElementById('rateType')?.value||'hourly';
+  const amount = parseInt(document.getElementById('rateAmount')?.value||350);
+  const units  = { hourly:'per hour', daily:'per day', fixed:'fixed rate' };
+  document.getElementById('ratePreview').textContent = '₱'+amount.toLocaleString();
+  document.getElementById('rateUnit').textContent    = units[type]||'per hour';
+}
+
+async function saveRate() {
+  const type  = document.getElementById('rateType').value;
+  const amount= parseFloat(document.getElementById('rateAmount').value||0);
+  settings.rateType   = type;
+  settings.rateAmount = amount;
+  saveLocal();
+  // Also update daily_rate in DB
+  try {
+    await apiFetch('api/contractor.php?action=availability','PUT',{ availability:'available', daily_rate: amount });
+    showToast('Rate saved!','success');
+  } catch(_) { showToast('Rate saved locally','info'); }
+}
+
+function renderAvailGrid() {
+  const grid = document.getElementById('availGrid'); if(!grid) return;
+  grid.innerHTML = DAYS.map((d,i)=>`<div class="day-chip ${settings.availDays.includes(i)?'active':''}" onclick="toggleDay(${i},this)">${d}</div>`).join('');
+}
+
+function toggleDay(i, el) {
+  const pos=settings.availDays.indexOf(i);
+  if(pos>-1) settings.availDays.splice(pos,1); else settings.availDays.push(i);
+  el.classList.toggle('active');
+}
+
+function saveAvailability() { saveLocal(); showToast('Schedule saved!','success'); }
+function saveSetting(k,v) { settings[k]=v; saveLocal(); showToast('Setting saved','success',1800); }
+function saveLocal() { localStorage.setItem('cSettings',JSON.stringify(settings)); }
+function clearLocal() {
+  if(!confirm('Clear local cached data?')) return;
+  const theme=localStorage.getItem('portalTheme');
+  localStorage.clear();
+  if(theme) localStorage.setItem('portalTheme',theme);
+  showToast('Local data cleared','success');
+  setTimeout(()=>location.reload(),1000);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard — HandyFix Admin</title>
+  <link rel="stylesheet" href="shared.css"/>
+  <style>
+    .chart-bar-wrap { display:flex; align-items:flex-end; gap:5px; height:90px; padding:0 4px; }
+    .chart-bar { flex:1; border-radius:5px 5px 0 0; background:linear-gradient(180deg,var(--gold) 0%,var(--maroon) 100%); transition:height 0.8s ease; cursor:pointer; min-width:12px; position:relative; }
+    .chart-bar:hover { filter:brightness(1.25); }
+    .chart-bar .bar-tip { position:absolute;bottom:calc(100%+4px);left:50%;transform:translateX(-50%);background:var(--surface-3);border:1px solid var(--border);border-radius:6px;padding:2px 7px;font-size:9.5px;color:var(--gold);white-space:nowrap;opacity:0;transition:opacity 0.15s;pointer-events:none; }
+    .chart-bar:hover .bar-tip { opacity:1; }
+    .chart-labels { display:flex; gap:5px; padding:0 4px; margin-top:4px; }
+    .chart-labels span { flex:1; text-align:center; font-size:9px; color:var(--text-dim); min-width:12px; }
+    .activity-item { display:flex;align-items:flex-start;gap:11px;padding:10px 0;border-bottom:1px solid var(--border-soft); }
+    .activity-item:last-child { border-bottom:none; }
+    .a-dot { width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px; }
+    .a-title { font-size:12.5px;font-weight:500;color:var(--text-primary); }
+    .a-meta  { font-size:11px;color:var(--text-muted);margin-top:1px; }
+    .a-time  { font-size:10.5px;color:var(--text-dim);white-space:nowrap; }
+    .pending-row { display:flex;align-items:center;gap:12px;padding:12px;border-radius:var(--radius);border:1px solid var(--border-soft);background:var(--surface-2);margin-bottom:8px;transition:all var(--transition); }
+    .pending-row:hover { border-color:var(--border); }
+    .pending-icon { width:38px;height:38px;border-radius:9px;background:var(--gold-dim);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+  </style>
+</head>
+<body>
+<div class="portal-layout">
+  <main class="main-content" id="mainContent">
+    <header class="top-header">
+      <div class="header-left">
+        <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+        <div><div class="page-title">Dashboard</div><div class="breadcrumb">HandyFix Admin Overview</div></div>
+      </div>
+      <div class="header-right">
+        <div class="header-chip" id="headerDate">—</div>
+        <button class="theme-toggle-btn">☀️</button>
+        
+        <div class="notif-wrapper" style="position:relative; display:inline-block;">
+          <div class="hdr-btn" onclick="toggleNotifications()" style="cursor:pointer; font-size: 20px;">🔔<span class="hdr-notif-dot" id="notifDot" style="display:none; position:absolute; top:-2px; right:-2px; background:var(--danger); width:8px; height:8px; border-radius:50%;"></span></div>
+          <div id="notifDropdown" style="display:none; position:absolute; right:0; top:45px; width:320px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); box-shadow:0 10px 25px rgba(0,0,0,0.2); z-index:100; overflow:hidden; text-align:left;">
+             <div style="padding:12px 16px; font-weight:700; border-bottom:1px solid var(--border-soft); background:var(--surface-2); font-size:14px; color:var(--text-primary);">Activity Log</div>
+             <div id="notifList" style="max-height:300px; overflow-y:auto; padding:10px;">Loading...</div>
+          </div>
+        </div>
+
+      </div>
+    </header>
+
+    <div class="page-content">
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card"><div class="stat-icon">📥</div><div class="stat-value" id="sReq">…</div><div class="stat-label">Pending Requests</div></div>
+        <div class="stat-card"><div class="stat-icon">🔧</div><div class="stat-value" id="sCon">…</div><div class="stat-label">Active Contractors</div></div>
+        <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-value" id="sCli">…</div><div class="stat-label">Total Clients</div></div>
+        <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-value" id="sDone">…</div><div class="stat-label">Jobs Completed</div></div>
+        <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-value" id="sRev">…</div><div class="stat-label">Total Revenue</div></div>
+      </div>
+
+      <div class="grid-2 mb-6">
+        <div class="card">
+          <div class="card-header"><div class="card-title"><span class="card-title-icon">📊</span> Monthly Bookings</div><span class="badge badge-gold" id="chartYear"></span></div>
+          <div id="chartWrap"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title"><span class="card-title-icon">📥</span> Pending Assignments</div><a href="admin_requests.html" class="btn btn-xs btn-outline-gold">View All</a></div>
+          <div id="pendingList"></div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div class="card-title"><span class="card-title-icon">🔔</span> Recent Activity</div></div>
+          <div id="activityList"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title"><span class="card-title-icon">⚡</span> Quick Actions</div></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <a href="admin_requests.html"     class="btn btn-secondary" style="justify-content:center">📥 Review Requests</a>
+            <a href="admin_contractors.html"  class="btn btn-secondary" style="justify-content:center">➕ Add Contractor</a>
+            <a href="admin_assignments.html"  class="btn btn-secondary" style="justify-content:center">📌 Assignments</a>
+            <a href="admin_reports.html"      class="btn btn-secondary" style="justify-content:center">📈 View Reports</a>
+          </div>
+          <div style="margin-top:18px;padding:14px;background:var(--surface-2);border:1px solid var(--border-soft);border-radius:var(--radius)">
+            <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:10px">Service Breakdown</div>
+            <div id="serviceBreakdown"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="toast-container"></div>
+<script src="shared.js"></script>
+<script src="admin_sidebar.js"></script>
+<script>
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+document.addEventListener('DOMContentLoaded', async () => {
+  buildAdminSidebar('admin_dashboard.html');
+  await HF.checkAuth();
+  
+  // Set Header Date
+  const dateOpts = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+  document.getElementById('headerDate').textContent = new Date().toLocaleDateString('en-US', dateOpts);
+  
+  document.getElementById('chartYear').textContent = new Date().getFullYear();
+  loadAll();
+});
+
+async function loadAll() {
+  await Promise.all([loadStats(), loadChart(), loadPending(), loadActivity(), loadServiceBreakdown(), loadNotifications()]);
+}
+
+/* --- Notifications Logic --- */
+async function loadNotifications() {
+  const list = document.getElementById('notifList');
+  const badge = document.getElementById('notifDot');
+  try {
+    const rows = await HF.apiFetch('api/dashboard.php?action=activity');
+    if (rows.length > 0) badge.style.display = 'block';
+    
+    list.innerHTML = rows.length === 0 ? '<div style="text-align:center;padding:10px;color:var(--text-muted);font-size:13px;">No recent activity.</div>' : 
+      rows.map(r => `
+        <div style="display:flex;gap:12px;padding:10px;border-bottom:1px solid var(--border-soft);">
+            <div style="font-size:18px;">${r.icon||'🔔'}</div>
+            <div>
+                <div style="font-size:13px;font-weight:600;color:${r.color||'var(--text-primary)'}">${HF.escapeHtml(r.action)}</div>
+                <div style="font-size:12px;color:var(--text-muted)">${HF.escapeHtml(r.detail)}</div>
+            </div>
+        </div>
+    `).join('');
+  } catch(e) { list.innerHTML = '<div style="color:var(--danger);padding:10px;font-size:13px;">Failed to load notifications.</div>'; }
+}
+
+function toggleNotifications() {
+  const dd = document.getElementById('notifDropdown');
+  dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+  if(dd.style.display === 'block') document.getElementById('notifDot').style.display = 'none';
+}
+
+document.addEventListener('click', e => {
+  if(!e.target.closest('.notif-wrapper')) {
+    const dd = document.getElementById('notifDropdown');
+    if(dd) dd.style.display = 'none';
+  }
+});
+/* --- End Notifications Logic --- */
+
+async function loadStats() {
+  try {
+    const d = await HF.apiFetch('api/dashboard.php?action=stats');
+    document.getElementById('sReq').textContent  = d.pending_requests;
+    document.getElementById('sCon').textContent  = d.active_contractors;
+    document.getElementById('sCli').textContent  = d.total_clients;
+    document.getElementById('sDone').textContent = d.jobs_completed;
+    document.getElementById('sRev').textContent  = d.total_revenue >= 1000
+      ? '₱' + Math.round(d.total_revenue / 1000) + 'K'
+      : HF.formatCurrency(d.total_revenue);
+    if (d.pending_requests > 0) document.getElementById('notifDot').style.display = '';
+  } catch(e) { HF.showToast('Could not load stats','error'); }
+}
+
+async function loadChart() {
+  const wrap = document.getElementById('chartWrap');
+  wrap.innerHTML = HF.loadingHTML();
+  try {
+    const data = await HF.apiFetch('api/dashboard.php?action=chart_bookings');
+    if (data.every(v => v === 0)) {
+      wrap.innerHTML = HF.emptyState('📊','No bookings yet','Data will appear once bookings are created');
+      return;
+    }
+    const max = Math.max(...data, 1);
+    let html = '<div class="chart-bar-wrap">';
+    data.forEach((v, i) => {
+      html += `<div class="chart-bar" style="height:${v/max*100}%"><div class="bar-tip">${v} bookings</div></div>`;
+    });
+    html += '</div><div class="chart-labels">';
+    MONTHS.forEach(m => { html += `<span>${m}</span>`; });
+    html += '</div>';
+    wrap.innerHTML = html;
+  } catch(e) { wrap.innerHTML = HF.emptyState('📊','Chart unavailable'); }
+}
+
+async function loadPending() {
+  const el = document.getElementById('pendingList');
+  el.innerHTML = HF.loadingHTML();
+  try {
+    const rows = await HF.apiFetch('api/dashboard.php?action=pending');
+    if (!rows.length) { el.innerHTML = HF.emptyState('📥','No pending requests','New bookings will appear here'); return; }
+    const serviceIcons = {'Electrical':'⚡','Plumbing':'🔧','Carpentry':'🪚','Painting':'🎨','Tiling':'🪟','AC':'❄️','Home Maintenance':'🏠'};
+    el.innerHTML = rows.map(r => {
+      const icon = Object.entries(serviceIcons).find(([k]) => r.service?.includes(k))?.[1] || '🔨';
+      return `<div class="pending-row">
+        <div class="pending-icon">${icon}</div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:600;color:var(--text-primary)">${HF.escapeHtml(r.service)}</div>
+          <div style="font-size:11.5px;color:var(--text-muted)">👤 ${HF.escapeHtml(r.client_name)} · 📅 ${r.scheduled_date ? HF.formatDate(r.scheduled_date) : 'TBD'}</div>
+        </div>
+        <a href="admin_requests.html" class="btn btn-primary btn-xs">Assign →</a>
+      </div>`;
+    }).join('');
+  } catch(e) { el.innerHTML = HF.emptyState('📥','Unable to load'); }
+}
+
+async function loadActivity() {
+  const el = document.getElementById('activityList');
+  el.innerHTML = HF.loadingHTML();
+  try {
+    const rows = await HF.apiFetch('api/dashboard.php?action=activity');
+    if (!rows.length) { el.innerHTML = HF.emptyState('🔔','No activity yet','Actions will be logged here'); return; }
+    el.innerHTML = rows.map(r => `
+      <div class="activity-item">
+        <div class="a-dot" style="background:${r.color||'var(--gold)'}"></div>
+        <div style="flex:1"><div class="a-title">${HF.escapeHtml(r.action)}</div><div class="a-meta">${HF.escapeHtml(r.detail||'')}</div></div>
+        <div class="a-time">${HF.timeAgo(parseInt(r.mins_ago)||0)}</div>
+      </div>`).join('');
+  } catch(e) { el.innerHTML = HF.emptyState('🔔','Activity unavailable'); }
+}
+
+async function loadServiceBreakdown() {
+  const el = document.getElementById('serviceBreakdown');
+  try {
+    const rows = await HF.apiFetch('api/dashboard.php?action=service_breakdown');
+    if (!rows.length) { el.innerHTML = '<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:12px">No booking data yet</div>'; return; }
+    el.innerHTML = rows.map(r => `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <span style="font-size:12px;flex:0 0 120px;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${HF.escapeHtml(r.service)}</span>
+        <div class="progress-bar-bg" style="flex:1"><div class="progress-bar-fill" style="width:${r.pct}%"></div></div>
+        <span style="font-size:11px;color:var(--text-muted);min-width:32px;text-align:right">${r.pct}%</span>
+      </div>`).join('');
+  } catch(_) {}
+}
+</script>
+</body>
+</html>

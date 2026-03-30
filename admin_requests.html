@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Requests — HandyFix Admin</title>
+  <link rel="stylesheet" href="shared.css"/>
+  <style>
+    .req-card { background:var(--surface); border:1px solid var(--border-soft); border-radius:var(--radius-lg); padding:18px; margin-bottom:10px; transition:all var(--transition); }
+    .req-card:hover { border-color:var(--border); }
+    .req-id   { font-size:11px; color:var(--text-muted); margin-bottom:3px; }
+    .req-title{ font-size:14px; font-weight:700; color:var(--text-primary); }
+    .select-wrap { position:relative; }
+    .select-wrap select { width:100%; padding:8px 12px; background:var(--input-bg); border:1px solid var(--input-border); border-radius:var(--radius); color:var(--text-primary); font-size:13px; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+  </style>
+</head>
+<body>
+<div class="portal-layout">
+  <main class="main-content" id="mainContent">
+    <header class="top-header">
+      <div class="header-left">
+        <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+        <div><div class="page-title">Service Requests</div><div class="breadcrumb">Review and assign incoming requests</div></div>
+      </div>
+      <div class="header-right">
+        <div class="header-chip" id="headerDate">—</div>
+        <button class="theme-toggle-btn">☀️</button>
+        <div class="search-wrap"><span class="s-icon">🔍</span><input type="text" id="reqSearch" placeholder="Search…" oninput="debounceLoad()"/></div>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:24px">
+        <div class="stat-card"><div class="stat-icon">📥</div><div class="stat-value" id="sPending">0</div><div class="stat-label">Pending</div></div>
+        <div class="stat-card"><div class="stat-icon">📅</div><div class="stat-value" id="sScheduled">0</div><div class="stat-label">Scheduled</div></div>
+        <div class="stat-card"><div class="stat-icon">🔄</div><div class="stat-value" id="sInProg">0</div><div class="stat-label">In Progress</div></div>
+        <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-value" id="sDone">0</div><div class="stat-label">Completed</div></div>
+      </div>
+
+      <div class="section-header mb-4">
+        <div class="tabs-wrapper" id="reqTabs">
+          <button class="tab-btn active" data-tab="tab-pending-req" data-status="pending">Pending</button>
+          <button class="tab-btn" data-tab="tab-scheduled-req" data-status="scheduled">Scheduled</button>
+          <button class="tab-btn" data-tab="tab-inprog-req" data-status="in_progress">In Progress</button>
+          <button class="tab-btn" data-tab="tab-done-req" data-status="completed">Completed</button>
+          <button class="tab-btn" data-tab="tab-cancelled-req" data-status="cancelled">Cancelled</button>
+        </div>
+      </div>
+
+      <div class="tab-panel active" id="tab-pending-req"><div id="list-pending"></div></div>
+      <div class="tab-panel" id="tab-scheduled-req"><div id="list-scheduled"></div></div>
+      <div class="tab-panel" id="tab-inprog-req"><div id="list-in_progress"></div></div>
+      <div class="tab-panel" id="tab-done-req"><div id="list-completed"></div></div>
+      <div class="tab-panel" id="tab-cancelled-req"><div id="list-cancelled"></div></div>
+    </div>
+  </main>
+</div>
+
+<div class="modal-overlay" id="assignModal">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-header">
+      <div class="modal-title">Assign Contractor</div>
+      <button class="modal-close" onclick="closeModal('assignModal')">✕</button>
+    </div>
+    <div id="assignModalBody" style="padding:16px 0"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('assignModal')">Cancel</button>
+      <button class="btn btn-primary" id="confirmAssignBtn">Assign →</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="shared.js"></script>
+<script src="admin_sidebar.js"></script>
+<script>
+const SERVICE_ICONS = {'Electrical':'⚡','Plumbing':'🔧','Carpentry':'🪚','Painting':'🎨','Tiling':'🪟','AC':'❄️','Home Maintenance':'🏠'};
+const STATUS_MAP   = { pending:'badge-info', scheduled:'badge-warning', in_progress:'badge-warning', completed:'badge-success', cancelled:'badge-danger' };
+const STATUS_LBL   = { pending:'Pending', scheduled:'Scheduled', in_progress:'In Progress', completed:'Completed', cancelled:'Cancelled' };
+
+let allBookings = [];
+let contractors = [];
+
+const debounceLoad = HF.debounce(() => loadBookings(), 300);
+
+document.addEventListener('DOMContentLoaded', async () => {
+  buildAdminSidebar('admin_requests.html');
+  await HF.checkAuth();
+  initTabs();
+  await Promise.all([loadBookings(), loadContractors()]);
+});
+
+function initTabs() {
+  document.querySelectorAll('#reqTabs .tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#reqTabs .tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.tab)?.classList.add('active');
+    });
+  });
+}
+
+async function loadContractors() {
+  try {
+    contractors = await HF.apiFetch('api/contractors.php?avail=available');
+  } catch(_) { contractors = []; }
+}
+
+async function loadBookings() {
+  const q = document.getElementById('reqSearch')?.value || '';
+  const statuses = ['pending','scheduled','in_progress','completed','cancelled'];
+  statuses.forEach(s => {
+    document.getElementById('list-'+s).innerHTML = HF.loadingHTML();
+  });
+
+  try {
+    const params = new URLSearchParams({ q });
+    allBookings = await HF.apiFetch('api/bookings.php?' + params);
+    renderAllLists();
+    updateStats();
+  } catch(e) {
+    HF.showToast('Failed to load requests', 'error');
+  }
+}
+
+function updateStats() {
+  ['pending','scheduled','in_progress','completed'].forEach(s => {
+    const count = allBookings.filter(b => b.status === s).length;
+    const el = document.getElementById('s' + { pending:'Pending', scheduled:'Scheduled', in_progress:'InProg', completed:'Done' }[s]);
+    if (el) el.textContent = count;
+  });
+}
+
+function renderAllLists() {
+  ['pending','scheduled','in_progress','completed','cancelled'].forEach(s => {
+    renderList('list-'+s, allBookings.filter(b => b.status === s));
+  });
+}
+
+function getServiceIcon(service) {
+  return Object.entries(SERVICE_ICONS).find(([k]) => service?.includes(k))?.[1] || '🔨';
+}
+
+function renderList(elId, list) {
+  const wrap = document.getElementById(elId);
+  if (!wrap) return;
+  if (!list.length) {
+    wrap.innerHTML = HF.emptyState('📥', 'No requests here', 'Items matching this status will appear here');
+    return;
+  }
+  wrap.innerHTML = list.map(b => `
+    <div class="req-card">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+        <div>
+          <div class="req-id">${HF.escapeHtml(b.booking_ref)} · 📅 ${b.scheduled_date ? HF.formatDate(b.scheduled_date) : 'TBD'} ${b.scheduled_time ? '· ⏰ '+HF.formatTime(b.scheduled_time) : ''}</div>
+          <div class="req-title">${getServiceIcon(b.service)} ${HF.escapeHtml(b.service)}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px">
+            👤 ${HF.escapeHtml(b.client_name)} · ${b.address ? '📍 '+HF.escapeHtml(b.address)+' · ' : ''}💰 ${HF.formatCurrency(b.amount)}
+          </div>
+          ${b.contractor_name ? `<div style="font-size:12px;color:var(--gold);margin-top:3px">🔧 ${HF.escapeHtml(b.contractor_name)}</div>` : ''}
+        </div>
+        <span class="badge ${STATUS_MAP[b.status]}">${STATUS_LBL[b.status]}</span>
+      </div>
+      ${b.description ? `<div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;padding:8px;background:var(--surface-2);border-radius:var(--radius)">${HF.escapeHtml(b.description)}</div>` : ''}
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${b.status==='pending' ? `<button class="btn btn-primary btn-sm" onclick="openAssign(${b.id})">🔧 Assign Contractor</button>` : ''}
+        ${['scheduled','in_progress'].includes(b.status) ? `
+          <button class="btn btn-success btn-sm" onclick="updateStatus(${b.id},'completed')">✅ Complete</button>
+          <button class="btn btn-warning btn-sm" onclick="updateStatus(${b.id},'in_progress')">🔄 In Progress</button>
+          <button class="btn btn-danger btn-sm"  onclick="updateStatus(${b.id},'cancelled')">❌ Cancel</button>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+let pendingAssignBookingId = null;
+
+function openAssign(bookingId) {
+  pendingAssignBookingId = bookingId;
+  const booking = allBookings.find(b => b.id === bookingId);
+  const body = document.getElementById('assignModalBody');
+  
+  // FIX: Filter contractors so only those whose trade matches the requested service appear
+  const matchingContractors = contractors.filter(c => 
+      c.trade && booking && c.trade.toLowerCase() === booking.service.toLowerCase()
+  );
+
+  if (!matchingContractors.length) {
+    body.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-muted)">
+      No available contractors found for <strong>${HF.escapeHtml(booking?.service||'')}</strong>.<br><br>
+      <a href="admin_contractors.html" class="text-gold">Verify or add a matching contractor first.</a></div>`;
+    document.getElementById('confirmAssignBtn').disabled = true;
+  } else {
+    body.innerHTML = `
+      <div style="margin-bottom:12px;font-size:13px;color:var(--text-muted)">
+        Assigning: <strong style="color:var(--text-primary)">${HF.escapeHtml(booking?.service||'')}</strong>
+        for <strong style="color:var(--text-primary)">${HF.escapeHtml(booking?.client_name||'')}</strong>
+      </div>
+      <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px">Select Contractor</label>
+      <div class="select-wrap">
+        <select id="contractorSelect" class="form-input w-full">
+          <option value="">— Choose a matching contractor —</option>
+          ${matchingContractors.map(c => `<option value="${c.id}">${HF.escapeHtml(c.name)} · ${HF.escapeHtml(c.trade||'')} (${c.availability})</option>`).join('')}
+        </select>
+      </div>`;
+    document.getElementById('confirmAssignBtn').disabled = false;
+  }
+  document.getElementById('confirmAssignBtn').onclick = confirmAssign;
+  openModal('assignModal');
+}
+
+async function confirmAssign() {
+  const cid = parseInt(document.getElementById('contractorSelect')?.value);
+  if (!cid) { HF.showToast('Please select a contractor', 'warning'); return; }
+
+  try {
+    await HF.apiFetch(`api/bookings.php?id=${pendingAssignBookingId}&action=assign`, 'PUT', { contractor_id: cid });
+    closeModal('assignModal');
+    HF.showToast('Contractor assigned!', 'success');
+    await loadBookings();
+  } catch(e) {
+    HF.showToast(e.message || 'Assignment failed', 'error');
+  }
+}
+
+async function updateStatus(bookingId, status) {
+  if (status === 'cancelled' && !confirm('Cancel this booking?')) return;
+  try {
+    await HF.apiFetch(`api/bookings.php?id=${bookingId}&action=status`, 'PUT', { status });
+    HF.showToast('Status updated!', 'success');
+    await loadBookings();
+  } catch(e) {
+    HF.showToast(e.message || 'Update failed', 'error');
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>My Bookings — HandyFix Client</title>
+  <link rel="stylesheet" href="shared.css"/>
+  <style>
+    .booking-card { background:var(--surface); border:1px solid var(--border-soft); border-radius:var(--radius-lg); padding:18px; margin-bottom:12px; transition:all var(--transition); }
+    .booking-card:hover { border-color:var(--border); box-shadow:var(--shadow-sm); }
+    .bk-id { font-size:11px; color:var(--text-muted); margin-bottom:3px; }
+    .bk-title { font-size:14px; font-weight:700; color:var(--text-primary); }
+    .bk-meta { display:flex; flex-wrap:wrap; gap:12px; font-size:12px; color:var(--text-muted); margin-top:8px; }
+    .bk-actions { display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
+    .contractor-pill { display:flex; align-items:center; gap:8px; background:var(--surface-2); border:1px solid var(--border-soft); border-radius:var(--radius); padding:8px 12px; margin-top:10px; }
+    .cp-avatar { width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--maroon),var(--maroon-dark));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--gold);border:1.5px solid var(--gold-border);flex-shrink:0; }
+    .tl-item { display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid var(--border-soft);font-size:12px; }
+    .tl-item:last-child { border-bottom:none; }
+    .tl-dot { width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px; }
+    @keyframes hfSpin { to{transform:rotate(360deg);} }
+  </style>
+</head>
+<body>
+<div class="portal-layout">
+  <main class="main-content" id="mainContent">
+    <header class="top-header">
+      <div class="header-left">
+        <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+        <div><div class="page-title">My Bookings</div><div class="breadcrumb">Track your service requests</div></div>
+      </div>
+      <div class="header-right">
+        <div class="header-chip" id="headerDate">—</div>
+        <button class="theme-toggle-btn">☀️</button>
+        <button class="btn btn-primary btn-sm" onclick="window.location.href='client_services.html'">+ New Booking</button>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <div class="section-header mb-4">
+        <div class="tabs-wrapper" id="bookingTabs">
+          <button class="tab-btn active" data-tab="tab-all">All</button>
+          <button class="tab-btn" data-tab="tab-pending">Pending</button>
+          <button class="tab-btn" data-tab="tab-active">In Progress</button>
+          <button class="tab-btn" data-tab="tab-completed">Completed</button>
+          <button class="tab-btn" data-tab="tab-cancelled">Cancelled</button>
+        </div>
+        <div class="search-wrap">
+          <span class="s-icon">🔍</span>
+          <input type="text" placeholder="Search bookings…" id="bkSearch" oninput="debounceSearch()"/>
+        </div>
+      </div>
+
+      <div class="tab-panel active" id="tab-all"><div id="list-all"></div></div>
+      <div class="tab-panel" id="tab-pending"><div id="list-pending"></div></div>
+      <div class="tab-panel" id="tab-active"><div id="list-active"></div></div>
+      <div class="tab-panel" id="tab-completed"><div id="list-completed"></div></div>
+      <div class="tab-panel" id="tab-cancelled"><div id="list-cancelled"></div></div>
+    </div>
+  </main>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header"><div class="modal-title">Booking Details</div><button class="modal-close" onclick="closeModal('detailModal')">✕</button></div>
+    <div id="detailBody"></div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('detailModal')">Close</button></div>
+  </div>
+</div>
+
+<!-- Review Modal -->
+<div class="modal-overlay" id="reviewModal">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header"><div class="modal-title">⭐ Leave a Review</div><button class="modal-close" onclick="closeModal('reviewModal')">✕</button></div>
+    <div class="form-group">
+      <label class="form-label">Rating</label>
+      <div id="starRating" style="display:flex;gap:8px;font-size:28px;cursor:pointer">
+        <span onclick="setRating(1)">☆</span><span onclick="setRating(2)">☆</span>
+        <span onclick="setRating(3)">☆</span><span onclick="setRating(4)">☆</span><span onclick="setRating(5)">☆</span>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Comment (optional)</label><textarea class="form-input" id="reviewComment" rows="3" placeholder="How was the service?"></textarea></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('reviewModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitReview()">Submit Review</button>
+    </div>
+  </div>
+</div>
+
+<!-- Cancel Modal -->
+<div class="modal-overlay" id="cancelModal">
+  <div class="modal" style="max-width:400px;text-align:center">
+    <div style="font-size:44px;margin-bottom:12px">❌</div>
+    <div class="modal-title" style="text-align:center;margin-bottom:8px">Cancel Booking?</div>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">This cannot be undone. The booking will be marked as cancelled.</p>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="btn btn-secondary" onclick="closeModal('cancelModal')">Keep Booking</button>
+      <button class="btn btn-danger" id="confirmCancelBtn">Yes, Cancel It</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="shared.js"></script>
+<script src="client_sidebar.js"></script>
+<script>
+let allBookings = [];
+let reviewBookingId = null;
+let selectedRating  = 0;
+const SERVICE_ICONS = { Plumbing:'🔧', Electrical:'⚡', Carpentry:'🪚', 'Home Maintenance':'🏠', Tools:'🔨', Painting:'🎨' };
+const STATUS_MAP = { pending:'badge-warning', scheduled:'badge-info', in_progress:'badge-info', completed:'badge-success', cancelled:'badge-danger' };
+const STATUS_LBL = { pending:'Pending', scheduled:'Scheduled', in_progress:'In Progress', completed:'Completed', cancelled:'Cancelled' };
+
+const debounceSearch = HF.debounce(() => renderAll(), 300);
+
+document.addEventListener('DOMContentLoaded', () => {
+  buildClientSidebar('client_bookings.html');
+  initTabs();
+  setTimeout(loadBookings, 500);
+});
+
+function initTabs() {
+  document.querySelectorAll('#bookingTabs .tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#bookingTabs .tab-btn').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.tab)?.classList.add('active');
+    });
+  });
+}
+
+async function loadBookings() {
+  const q = document.getElementById('bkSearch')?.value || '';
+  const panels = ['all','pending','active','completed','cancelled'];
+  panels.forEach(s => { const el=document.getElementById('list-'+s); if(el) el.innerHTML=HF.loadingHTML(); });
+
+  try {
+    allBookings = await hfFetch('api/client.php?action=bookings&q='+encodeURIComponent(q));
+    renderAll();
+  } catch(e) {
+    HF.showToast('Failed to load bookings','error');
+    panels.forEach(s => {
+      const el=document.getElementById('list-'+s);
+      if(el) el.innerHTML = HF.emptyState('📋','Could not load bookings');
+    });
+  }
+}
+
+function getIcon(service) {
+  return Object.entries(SERVICE_ICONS).find(([k])=>service?.includes(k))?.[1] || '🔩';
+}
+
+function renderAll() {
+  const q = (document.getElementById('bkSearch')?.value||'').toLowerCase();
+  const filtered = q ? allBookings.filter(b =>
+    b.service?.toLowerCase().includes(q) || b.booking_ref?.toLowerCase().includes(q)
+  ) : allBookings;
+
+  renderList('list-all',       filtered);
+  renderList('list-pending',   filtered.filter(b=>b.status==='pending'));
+  renderList('list-active',    filtered.filter(b=>['scheduled','in_progress'].includes(b.status)));
+  renderList('list-completed', filtered.filter(b=>b.status==='completed'));
+  renderList('list-cancelled', filtered.filter(b=>b.status==='cancelled'));
+}
+
+function renderList(elId, list) {
+  const wrap = document.getElementById(elId); if (!wrap) return;
+  if (!list.length) { wrap.innerHTML = HF.emptyState('📋','No bookings here'); return; }
+  wrap.innerHTML = list.map(b => `
+    <div class="booking-card">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+        <div>
+          <div class="bk-id">${HF.escapeHtml(b.booking_ref)} · Created ${HF.formatDate(b.created_at)}</div>
+          <div class="bk-title">${getIcon(b.service)} ${HF.escapeHtml(b.service)}</div>
+          <div class="bk-meta">
+            <span>📅 ${b.scheduled_date?HF.formatDate(b.scheduled_date):'TBD'}</span>
+            ${b.scheduled_time?`<span>⏰ ${HF.formatTime(b.scheduled_time)}</span>`:''}
+            <span>📍 ${HF.escapeHtml(b.address||'—')}</span>
+            <span>💰 ${HF.formatCurrency(b.amount)}</span>
+          </div>
+        </div>
+        <span class="badge ${STATUS_MAP[b.status]||'badge-muted'}">${STATUS_LBL[b.status]||b.status}</span>
+      </div>
+      ${b.description?`<div style="font-size:12.5px;color:var(--text-muted);padding:8px 0;border-top:1px solid var(--border-soft)">${HF.escapeHtml(b.description)}</div>`:''}
+      ${b.contractor
+        ? `<div class="contractor-pill">
+             <div class="cp-avatar">${HF.escapeHtml(b.contractor.initials)}</div>
+             <div><div style="font-size:13px;font-weight:600;color:var(--text-primary)">👷 ${HF.escapeHtml(b.contractor.name)}</div>
+             <div style="font-size:11.5px;color:var(--text-muted)">${HF.escapeHtml(b.contractor.trade||'')} · ${HF.escapeHtml(b.contractor.phone||'')}</div></div>
+           </div>`
+        : b.status==='pending'?`<div style="font-size:12px;color:var(--gold);margin-top:8px">⏳ Admin is assigning a contractor…</div>`:''}
+      <div class="bk-actions">
+        <button class="btn btn-secondary btn-sm" onclick="viewDetail(${b.id})">👁 View Details</button>
+        ${b.status==='completed'?`<button class="btn btn-outline-gold btn-sm" onclick="openReview(${b.id})">⭐ Leave Review</button>`:''}
+        ${['pending','scheduled'].includes(b.status)?`<button class="btn btn-danger btn-sm" onclick="openCancel(${b.id})">❌ Cancel</button>`:''}
+        ${b.contractor?`<a href="client_support.html" class="btn btn-sm btn-outline-gold">💬 Support</a>`:''}
+      </div>
+    </div>`).join('');
+}
+
+function viewDetail(id) {
+  const b = allBookings.find(x=>x.id==id); if(!b) return;
+  document.getElementById('detailBody').innerHTML = `
+    <div style="margin-bottom:16px">
+      <div style="font-size:20px;font-weight:700;color:var(--text-primary);margin-bottom:4px">${getIcon(b.service)} ${HF.escapeHtml(b.service)}</div>
+      <div style="display:flex;gap:8px"><span class="badge ${STATUS_MAP[b.status]||'badge-muted'}">${STATUS_LBL[b.status]||b.status}</span><span style="font-size:12px;color:var(--text-muted);align-self:center">${HF.escapeHtml(b.booking_ref)}</span></div>
+    </div>
+    <div style="display:grid;gap:2px">
+      ${[
+        ['📅 Date', b.scheduled_date?HF.formatDate(b.scheduled_date):'TBD'],
+        ['⏰ Time', b.scheduled_time?HF.formatTime(b.scheduled_time):'TBD'],
+        ['📍 Address', b.address||'—'],
+        ['💰 Amount', HF.formatCurrency(b.amount)],
+        ['📝 Description', b.description||'—'],
+      ].map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border-soft)">
+        <span style="font-size:12px;color:var(--text-muted)">${k}</span>
+        <span style="font-size:13px;font-weight:600;color:var(--text-primary);text-align:right;max-width:60%">${HF.escapeHtml(String(v))}</span>
+      </div>`).join('')}
+    </div>
+    ${b.contractor?`<div style="margin-top:14px"><div style="font-size:11.5px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:8px">Assigned Contractor</div>
+    <div class="contractor-pill"><div class="cp-avatar">${HF.escapeHtml(b.contractor.initials)}</div>
+    <div><div style="font-size:13px;font-weight:600;color:var(--text-primary)">${HF.escapeHtml(b.contractor.name)}</div>
+    <div style="font-size:11.5px;color:var(--text-muted)">${HF.escapeHtml(b.contractor.phone||'')}</div></div></div></div>`:''}
+    <div style="margin-top:16px;padding:12px;background:var(--surface-2);border-radius:var(--radius);border:1px solid var(--border-soft)">
+      <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:8px">Timeline</div>
+      <div class="tl-item"><div class="tl-dot" style="background:var(--success)"></div><div><div style="font-weight:600;color:var(--text-primary)">Booking Created</div><div style="color:var(--text-muted)">${HF.formatDate(b.created_at)}</div></div></div>
+      ${b.contractor?`<div class="tl-item"><div class="tl-dot" style="background:var(--gold)"></div><div><div style="font-weight:600;color:var(--text-primary)">Contractor Assigned</div><div style="color:var(--text-muted)">By admin</div></div></div>`:''}
+      ${['in_progress','completed'].includes(b.status)?`<div class="tl-item"><div class="tl-dot" style="background:var(--info)"></div><div><div style="font-weight:600;color:var(--text-primary)">Work In Progress</div></div></div>`:''}
+      ${b.status==='completed'?`<div class="tl-item"><div class="tl-dot" style="background:var(--success)"></div><div><div style="font-weight:600;color:var(--success)">Completed ✓</div></div></div>`:''}
+      ${b.status==='cancelled'?`<div class="tl-item"><div class="tl-dot" style="background:var(--danger)"></div><div><div style="font-weight:600;color:var(--danger)">Cancelled</div></div></div>`:''}
+    </div>`;
+  openModal('detailModal');
+}
+
+function openCancel(id) {
+  document.getElementById('confirmCancelBtn').onclick = () => doCancel(id);
+  openModal('cancelModal');
+}
+async function doCancel(id) {
+  try {
+    await hfFetch(`api/client.php?action=cancel&id=${id}`, 'PUT');
+    closeModal('cancelModal');
+    HF.showToast('Booking cancelled.','warning');
+    loadBookings();
+  } catch(e) { HF.showToast(e.message||'Cancel failed','error'); }
+}
+
+function openReview(id) {
+  reviewBookingId = id;
+  selectedRating  = 0;
+  updateStars(0);
+  document.getElementById('reviewComment').value = '';
+  openModal('reviewModal');
+}
+function setRating(n) { selectedRating=n; updateStars(n); }
+function updateStars(n) {
+  document.querySelectorAll('#starRating span').forEach((el,i) => {
+    el.textContent = i < n ? '⭐' : '☆';
+  });
+}
+async function submitReview() {
+  if (!selectedRating) { HF.showToast('Please select a rating','warning'); return; }
+  try {
+    await hfFetch('api/client.php?action=review', 'POST', {
+      booking_id: reviewBookingId,
+      rating:     selectedRating,
+      comment:    document.getElementById('reviewComment').value,
+    });
+    closeModal('reviewModal');
+    HF.showToast('Review submitted! Thank you.','success');
+  } catch(e) { HF.showToast(e.message||'Review failed','error'); }
+}
+</script>
+</body>
+</html>

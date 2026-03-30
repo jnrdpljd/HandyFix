@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Settings — HandyFix Client</title>
+  <link rel="stylesheet" href="shared.css"/>
+  <style>
+    .settings-section { background:var(--surface); border:1px solid var(--border-soft); border-radius:var(--radius-lg); padding:22px; margin-bottom:20px; }
+    .settings-title { font-family:'Playfair Display',serif; font-size:15px; font-weight:700; color:var(--text-primary); margin-bottom:18px; padding-bottom:12px; border-bottom:1px solid var(--border-soft); display:flex; align-items:center; gap:8px; }
+    .toggle-row { display:flex; align-items:center; justify-content:space-between; padding:13px 0; border-bottom:1px solid var(--border-soft); }
+    .toggle-row:last-child { border-bottom:none; padding-bottom:0; }
+    .toggle-label { font-size:13.5px; font-weight:600; color:var(--text-primary); }
+    .toggle-desc  { font-size:11.5px; color:var(--text-muted); margin-top:2px; }
+    .theme-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .theme-opt { padding:14px; border-radius:var(--radius); border:2px solid var(--border-soft); cursor:pointer; text-align:center; transition:all var(--transition); }
+    .theme-opt.active { border-color:var(--gold); background:var(--gold-dim); }
+    .theme-opt:hover:not(.active) { border-color:var(--border); }
+    .theme-preview { height:50px; border-radius:8px; margin-bottom:8px; border:1px solid var(--border-soft); }
+    .danger-section { background:rgba(239,68,68,0.05); border:1px solid rgba(239,68,68,0.18); border-radius:var(--radius-lg); padding:22px; }
+    .danger-title { color:var(--danger); font-family:'Playfair Display',serif; font-size:15px; font-weight:700; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+    .danger-row { display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid rgba(239,68,68,0.1); flex-wrap:wrap; gap:10px; }
+    .danger-row:last-child { border-bottom:none; }
+  </style>
+</head>
+<body>
+<div class="portal-layout">
+  <main class="main-content" id="mainContent">
+    <header class="top-header">
+      <div class="header-left">
+        <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+        <div><div class="page-title">Settings</div><div class="breadcrumb">Manage your preferences</div></div>
+      </div>
+      <div class="header-right"><button class="theme-toggle-btn">☀️</button></div>
+    </header>
+
+    <div class="page-content">
+      <div class="grid-2">
+        <div>
+          <!-- Appearance -->
+          <div class="settings-section">
+            <div class="settings-title">🎨 Appearance</div>
+            <div class="theme-grid">
+              <div class="theme-opt" id="darkOpt" onclick="selectTheme('dark')">
+                <div class="theme-preview" style="background:linear-gradient(135deg,#0D0D0D,#1A1A1A)"></div>
+                <div style="font-size:13px;font-weight:600;color:var(--text-primary)">🌙 Dark</div>
+              </div>
+              <div class="theme-opt" id="lightOpt" onclick="selectTheme('light')">
+                <div class="theme-preview" style="background:linear-gradient(135deg,#F4F1EB,#FFFFFF)"></div>
+                <div style="font-size:13px;font-weight:600;color:var(--text-primary)">☀️ Light</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Notifications -->
+          <div class="settings-section">
+            <div class="settings-title">🔔 Notifications</div>
+            <div class="toggle-row">
+              <div><div class="toggle-label">Booking Confirmations</div><div class="toggle-desc">When your booking is accepted or assigned</div></div>
+              <label class="toggle-switch"><input type="checkbox" id="notif_confirm" checked onchange="savePref('notif_confirm',this.checked)"/><span class="toggle-slider"></span></label>
+            </div>
+            <div class="toggle-row">
+              <div><div class="toggle-label">Contractor Assigned</div><div class="toggle-desc">Alert when admin assigns a contractor to you</div></div>
+              <label class="toggle-switch"><input type="checkbox" id="notif_assigned" checked onchange="savePref('notif_assigned',this.checked)"/><span class="toggle-slider"></span></label>
+            </div>
+            <div class="toggle-row">
+              <div><div class="toggle-label">Job Reminders</div><div class="toggle-desc">Reminder 1 hour before your service</div></div>
+              <label class="toggle-switch"><input type="checkbox" id="notif_remind" checked onchange="savePref('notif_remind',this.checked)"/><span class="toggle-slider"></span></label>
+            </div>
+            <div class="toggle-row">
+              <div><div class="toggle-label">Promotional Emails</div><div class="toggle-desc">Deals and service announcements</div></div>
+              <label class="toggle-switch"><input type="checkbox" id="notif_promo" onchange="savePref('notif_promo',this.checked)"/><span class="toggle-slider"></span></label>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <!-- Privacy -->
+          <div class="settings-section">
+            <div class="settings-title">🔒 Privacy</div>
+            <div class="toggle-row">
+              <div><div class="toggle-label">Share Rating Data</div><div class="toggle-desc">Allow us to use your ratings to improve matching</div></div>
+              <label class="toggle-switch"><input type="checkbox" id="priv_rating" checked onchange="savePref('priv_rating',this.checked)"/><span class="toggle-slider"></span></label>
+            </div>
+            <div class="toggle-row">
+              <div><div class="toggle-label">Location Services</div><div class="toggle-desc">For better contractor matching in your area</div></div>
+              <label class="toggle-switch"><input type="checkbox" id="priv_loc" checked onchange="savePref('priv_loc',this.checked)"/><span class="toggle-slider"></span></label>
+            </div>
+          </div>
+
+          <!-- Language -->
+          <div class="settings-section">
+            <div class="settings-title">🌍 Language & Region</div>
+            <div class="form-group"><label class="form-label">Language</label>
+              <select class="form-input" id="pref_lang" onchange="savePref('language',this.value)">
+                <option value="en-PH" selected>English (Philippines)</option>
+                <option value="fil">Filipino</option>
+              </select>
+            </div>
+            <div class="form-group"><label class="form-label">Currency</label>
+              <select class="form-input">
+                <option value="PHP" selected>₱ Philippine Peso</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Danger Zone -->
+          <div class="danger-section">
+            <div class="danger-title">⚠️ Danger Zone</div>
+            <div class="danger-row">
+              <div><div style="font-size:13.5px;font-weight:600;color:var(--text-primary)">Clear Local Data</div><div style="font-size:11.5px;color:var(--text-muted)">Clear cached preferences (safe)</div></div>
+              <button class="btn btn-sm btn-danger" onclick="clearLocal()">Clear</button>
+            </div>
+            <div class="danger-row">
+              <div><div style="font-size:13.5px;font-weight:600;color:var(--text-primary)">Delete Account</div><div style="font-size:11.5px;color:var(--text-muted)">Permanently delete all your data</div></div>
+              <button class="btn btn-sm btn-danger" onclick="openModal('deleteModal')">Delete</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header"><div class="modal-title" style="color:var(--danger)">⚠️ Delete Account</div><button class="modal-close" onclick="closeModal('deleteModal')">✕</button></div>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px">Type <strong style="color:var(--danger)">DELETE</strong> to confirm permanent deletion of your account and all data.</p>
+    <div class="form-group"><input class="form-input" type="text" id="delConfirm" placeholder="DELETE"/></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('deleteModal')">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">Delete My Account</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="shared.js"></script>
+<script src="client_sidebar.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  buildClientSidebar('client_settings.html');
+  loadPrefs();
+  syncThemeCards();
+});
+
+function loadPrefs() {
+  try {
+    const prefs = JSON.parse(localStorage.getItem('clientPrefs')||'{}');
+    Object.entries(prefs).forEach(([k,v]) => {
+      const el = document.getElementById(k);
+      if (el) {
+        if (el.type === 'checkbox') el.checked = !!v;
+        else el.value = v;
+      }
+    });
+  } catch(_) {}
+}
+
+function selectTheme(t) { HF.applyTheme(t); syncThemeCards(); savePref('theme', t); }
+function syncThemeCards() {
+  const dark = HF.state.theme === 'dark';
+  document.getElementById('darkOpt')?.classList.toggle('active', dark);
+  document.getElementById('lightOpt')?.classList.toggle('active', !dark);
+}
+
+function savePref(k, v) {
+  const prefs = JSON.parse(localStorage.getItem('clientPrefs')||'{}');
+  prefs[k] = v;
+  localStorage.setItem('clientPrefs', JSON.stringify(prefs));
+  HF.showToast('Preference saved','success',1500);
+}
+
+function clearLocal() {
+  if (!confirm('Clear all locally cached data?')) return;
+  const theme = localStorage.getItem('hfTheme');
+  localStorage.clear();
+  if (theme) localStorage.setItem('hfTheme', theme);
+  HF.showToast('Local data cleared','success');
+  setTimeout(() => location.reload(), 1000);
+}
+
+function confirmDelete() {
+  if (document.getElementById('delConfirm').value !== 'DELETE') {
+    HF.showToast('Type DELETE to confirm','warning'); return;
+  }
+  HF.showToast('Account deletion requested. Our team will contact you.','info',5000);
+  closeModal('deleteModal');
+}
+</script>
+</body>
+</html>

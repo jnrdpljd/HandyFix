@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sign Up — HandyFix</title>
+  <link rel="stylesheet" href="shared.css"/>
+  <style>
+    body { background:var(--off-black); display:flex; flex-direction:column; min-height:100vh; }
+    .auth-nav { height:64px; background:var(--surface); border-bottom:1px solid var(--border-soft); display:flex; align-items:center; justify-content:space-between; padding:0 5%; flex-shrink:0; }
+    .nav-brand { display:flex;align-items:center;gap:10px;text-decoration:none; }
+    .nav-brand-text { font-family:'Playfair Display',serif; font-size:17px; font-weight:700; color:var(--gold); }
+    .auth-wrap { flex:1; display:flex; align-items:center; justify-content:center; padding:40px 20px; }
+    .auth-card { background:var(--surface); border:1px solid var(--border-soft); border-radius:var(--radius-xl); padding:36px; width:100%; max-width:480px; box-shadow:var(--shadow); }
+    .auth-title { font-family:'Playfair Display',serif; font-size:24px; font-weight:700; color:var(--text-primary); margin-bottom:4px; }
+    .err-box { background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); border-radius:var(--radius); padding:11px 14px; font-size:13px; color:#ef4444; margin-bottom:14px; display:none; }
+    .pw-wrap { position:relative; }
+    .pw-wrap input { padding-right:42px; }
+    .pw-eye { position:absolute; right:12px; top:50%; transform:translateY(-50%); cursor:pointer; color:var(--text-muted); border:none; background:none; font-size:16px; }
+    .str-bar { height:4px; border-radius:99px; background:var(--surface-3); margin-top:6px; overflow:hidden; }
+    .str-fill { height:100%; border-radius:99px; transition:all 0.3s; }
+    .step { display:none; } .step.show { display:block; }
+    .step-ind { display:flex; align-items:center; gap:8px; margin-bottom:22px; }
+    .sdot { width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:2px solid var(--border-soft);color:var(--text-muted);transition:all 0.3s; }
+    .sdot.active { border-color:var(--gold);background:var(--gold);color:#1A0A00; }
+    .sdot.done   { border-color:var(--success);background:rgba(34,197,94,0.15);color:var(--success); }
+    .sline { flex:1;height:2px;background:var(--border-soft);border-radius:99px;transition:background 0.3s; }
+    .sline.done { background:var(--gold); }
+    .auth-footer { text-align:center; margin-top:18px; font-size:13px; color:var(--text-muted); }
+    .auth-footer a { color:var(--gold); font-weight:600; }
+  </style>
+</head>
+<body>
+<nav class="auth-nav">
+  <a href="guest_index.html" class="nav-brand">
+    <div class="logo-mark">HF</div>
+    <div class="nav-brand-text">HandyFix</div>
+  </a>
+  <div style="display:flex;align-items:center;gap:10px">
+    <button class="theme-toggle-btn">☀️</button>
+    <span style="font-size:13px;color:var(--text-muted)">Have an account?</span>
+    <a href="guest_login.html" class="btn btn-secondary btn-sm">Log In</a>
+  </div>
+</nav>
+
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+      <div class="logo-mark">HF</div>
+      <div>
+        <div class="auth-title">Create Account</div>
+        <div style="font-size:13px;color:var(--text-muted)">Book services as a client — it's free</div>
+      </div>
+    </div>
+
+    <div class="step-ind">
+      <div class="sdot active" id="sd1">1</div>
+      <div class="sline" id="sl1"></div>
+      <div class="sdot" id="sd2">2</div>
+      <div class="sline" id="sl2"></div>
+      <div class="sdot" id="sd3">✓</div>
+    </div>
+
+    <div class="err-box" id="errBox"></div>
+
+    <!-- Step 1: Basic info -->
+    <div class="step show" id="step1">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">First Name <span class="required">*</span></label>
+          <input class="form-input" type="text" id="regFirst" placeholder="Juan" autocomplete="given-name"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Last Name <span class="required">*</span></label>
+          <input class="form-input" type="text" id="regLast" placeholder="dela Cruz" autocomplete="family-name"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email Address <span class="required">*</span></label>
+        <input class="form-input" type="email" id="regEmail" placeholder="juan@email.com" autocomplete="email"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Phone Number</label>
+        <input class="form-input" type="tel" id="regPhone" placeholder="+63 9XX XXX XXXX" autocomplete="tel"/>
+      </div>
+      <button class="btn btn-primary w-full" onclick="goStep2()">Continue →</button>
+    </div>
+
+    <!-- Step 2: Password -->
+    <div class="step" id="step2">
+      <div class="form-group">
+        <label class="form-label">Password <span class="required">*</span></label>
+        <div class="pw-wrap">
+          <input class="form-input" type="password" id="regPass" placeholder="Min. 8 characters" oninput="checkStr(this.value)"/>
+          <button type="button" class="pw-eye" onclick="togglePw('regPass')">👁</button>
+        </div>
+        <div class="str-bar"><div class="str-fill" id="strFill" style="width:0;background:var(--danger)"></div></div>
+        <div class="form-hint" id="strLbl">Enter a password</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirm Password <span class="required">*</span></label>
+        <div class="pw-wrap">
+          <input class="form-input" type="password" id="regPass2" placeholder="Repeat password"/>
+          <button type="button" class="pw-eye" onclick="togglePw('regPass2')">👁</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-secondary" onclick="goStep(1)">← Back</button>
+        <button class="btn btn-primary" style="flex:1" id="regBtn" onclick="doRegister()">Create Account →</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Done -->
+    <div class="step" id="step3">
+      <div style="text-align:center;padding:20px 0">
+        <div style="font-size:54px;margin-bottom:14px">🎉</div>
+        <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--text-primary);margin-bottom:8px">You're all set!</div>
+        <div style="font-size:13px;color:var(--text-muted);margin-bottom:22px;line-height:1.6" id="doneMsg">Your account has been created.</div>
+        <button class="btn btn-primary btn-lg w-full" onclick="window.location.href='client_home.html'">Go to Dashboard →</button>
+      </div>
+    </div>
+
+    <div class="auth-footer">
+      Already have an account? <a href="guest_login.html">Log in →</a><br>
+      <span style="font-size:11px;margin-top:8px;display:block">By signing up you agree to our <a href="#">Terms</a> &amp; <a href="#">Privacy Policy</a></span>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="shared.js"></script>
+<script>
+function togglePw(id) { const el=document.getElementById(id); el.type = el.type==='password'?'text':'password'; }
+
+function showErr(msg) {
+  const e = document.getElementById('errBox');
+  e.textContent = msg; e.style.display = 'block';
+}
+
+function checkStr(v) {
+  let s=0;
+  if(v.length>=8) s++;
+  if(/[A-Z]/.test(v)) s++;
+  if(/[0-9]/.test(v)) s++;
+  if(/[^A-Za-z0-9]/.test(v)) s++;
+  const lvl=[{w:'0%',bg:'var(--danger)',t:'Too short'},{w:'25%',bg:'var(--danger)',t:'Weak'},{w:'50%',bg:'var(--gold)',t:'Fair'},{w:'75%',bg:'#60a5fa',t:'Good'},{w:'100%',bg:'var(--success)',t:'Strong'}];
+  const l=lvl[s]||lvl[0];
+  const f=document.getElementById('strFill'); f.style.width=l.w; f.style.background=l.bg;
+  document.getElementById('strLbl').textContent=l.t;
+}
+
+function goStep(n) {
+  [1,2,3].forEach(i => {
+    document.getElementById('step'+i).classList.toggle('show', i===n);
+    const dot = document.getElementById('sd'+i);
+    if(dot) { dot.className='sdot'+(i<n?' done':i===n?' active':''); }
+    const line = document.getElementById('sl'+i);
+    if(line) line.classList.toggle('done', i<n);
+  });
+  document.getElementById('errBox').style.display='none';
+}
+
+function goStep2() {
+  const first = document.getElementById('regFirst').value.trim();
+  const last  = document.getElementById('regLast').value.trim();
+  const email = document.getElementById('regEmail').value.trim();
+  if (!first || !last) { showErr('Please enter your first and last name.'); return; }
+  if (!email || !email.includes('@')) { showErr('Please enter a valid email address.'); return; }
+  goStep(2);
+}
+
+async function doRegister() {
+  const first = document.getElementById('regFirst').value.trim();
+  const last  = document.getElementById('regLast').value.trim();
+  const email = document.getElementById('regEmail').value.trim();
+  const phone = document.getElementById('regPhone').value.trim();
+  const pass  = document.getElementById('regPass').value;
+  const pass2 = document.getElementById('regPass2').value;
+
+  document.getElementById('errBox').style.display='none';
+  if (pass.length < 8) { showErr('Password must be at least 8 characters.'); return; }
+  if (pass !== pass2)  { showErr('Passwords do not match.'); return; }
+
+  const btn = document.getElementById('regBtn');
+  btn.textContent = 'Creating account…'; btn.disabled = true;
+
+  try {
+    const data = await hfFetch('api/auth.php?action=register', 'POST', {
+      name: first + ' ' + last,
+      email, password: pass, phone,
+    });
+    if (data.success) {
+      document.getElementById('doneMsg').textContent = `Welcome, ${first}! Your client account is ready.`;
+      goStep(3);
+    }
+  } catch(e) {
+    showErr(e.message || 'Registration failed. Please try again.');
+    btn.textContent = 'Create Account →'; btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>

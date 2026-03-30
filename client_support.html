@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Help & Support — HandyFix Client</title>
+  <link rel="stylesheet" href="shared.css"/>
+  <style>
+    .faq-item { border-bottom:1px solid var(--border-soft); }
+    .faq-question { display:flex;align-items:center;justify-content:space-between;padding:16px 0;cursor:pointer;font-size:14px;font-weight:600;color:var(--text-primary);transition:color var(--transition); }
+    .faq-question:hover { color:var(--gold); }
+    .faq-answer { font-size:13px;color:var(--text-muted);line-height:1.7;padding-bottom:14px;display:none; }
+    .faq-answer.open { display:block; }
+    .faq-icon { font-size:16px;color:var(--text-muted);transition:transform var(--transition);flex-shrink:0; }
+    .faq-item.open .faq-icon { transform:rotate(45deg);color:var(--gold); }
+    .contact-option { display:flex;align-items:center;gap:14px;padding:16px;background:var(--surface-2);border:1px solid var(--border-soft);border-radius:var(--radius-lg);cursor:pointer;transition:all var(--transition); }
+    .contact-option:hover { border-color:var(--border);background:var(--surface-3); }
+    .co-icon { width:46px;height:46px;border-radius:12px;background:var(--gold-dim);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0; }
+    .co-title { font-size:13.5px;font-weight:700;color:var(--text-primary);margin-bottom:2px; }
+    .co-desc  { font-size:12px;color:var(--text-muted); }
+  </style>
+</head>
+<body>
+<div class="portal-layout">
+  <main class="main-content" id="mainContent">
+    <header class="top-header">
+      <div class="header-left">
+        <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+        <div><div class="page-title">Help & Support</div><div class="breadcrumb">We're here to help</div></div>
+      </div>
+      <div class="header-right"><button class="theme-toggle-btn">☀️</button></div>
+    </header>
+
+    <div class="page-content">
+      <div class="grid-2">
+        <div>
+          <div class="card mb-6">
+            <div class="card-header"><div class="card-title"><span class="card-title-icon">❓</span> Frequently Asked Questions</div></div>
+            <div id="faqList"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><div class="card-title"><span class="card-title-icon">✉️</span> Send Us a Message</div></div>
+            <form onsubmit="sendSupport(event)">
+              <div class="form-group">
+                <label class="form-label">Subject <span class="required">*</span></label>
+                <select class="form-input" id="supportSubject">
+                  <option>Booking Issue</option><option>Payment Problem</option>
+                  <option>Contractor Complaint</option><option>Account Help</option><option>Other</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Message <span class="required">*</span></label>
+                <textarea class="form-input" id="supportMsg" rows="4" placeholder="Describe your issue in detail…" required></textarea>
+              </div>
+              <button type="submit" class="btn btn-primary" id="supportBtn">Send Message →</button>
+            </form>
+          </div>
+        </div>
+
+        <div>
+          <div class="card mb-6">
+            <div class="card-header"><div class="card-title"><span class="card-title-icon">📞</span> Contact Us</div></div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div class="contact-option" onclick="HF.showToast('Opening live chat…','info')">
+                <div class="co-icon">💬</div>
+                <div><div class="co-title">Live Chat</div><div class="co-desc">Available Mon–Sat, 8AM–8PM</div></div>
+                <span class="badge badge-success" style="margin-left:auto">Online</span>
+              </div>
+              <div class="contact-option" onclick="HF.showToast('+63 (2) 8888-9999','info')">
+                <div class="co-icon">📞</div>
+                <div><div class="co-title">Call Hotline</div><div class="co-desc">+63 (2) 8888-9999</div></div>
+              </div>
+              <div class="contact-option" onclick="HF.showToast('support@handyfix.ph','info')">
+                <div class="co-icon">📧</div>
+                <div><div class="co-title">Email Support</div><div class="co-desc">support@handyfix.ph</div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><div class="card-title"><span class="card-title-icon">💡</span> Quick Tips</div></div>
+            <div style="padding:12px 0;border-bottom:1px solid var(--border-soft)">
+              <div style="font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:3px">📸 Take photos</div>
+              <div style="font-size:12px;color:var(--text-muted)">Document the issue before the contractor arrives so they come prepared.</div>
+            </div>
+            <div style="padding:12px 0;border-bottom:1px solid var(--border-soft)">
+              <div style="font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:3px">📅 Be flexible</div>
+              <div style="font-size:12px;color:var(--text-muted)">Offering a range of dates helps admin assign a contractor faster.</div>
+            </div>
+            <div style="padding:12px 0;border-bottom:1px solid var(--border-soft)">
+              <div style="font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:3px">💬 Communicate</div>
+              <div style="font-size:12px;color:var(--text-muted)">Use the messaging feature to stay in touch with your contractor.</div>
+            </div>
+            <div style="padding:12px 0;border-bottom:1px solid var(--border-soft)">
+              <div style="font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:3px">⭐ Leave reviews</div>
+              <div style="font-size:12px;color:var(--text-muted)">Ratings help other clients and reward great contractors.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="toast-container"></div>
+<script src="shared.js"></script>
+<script src="client_sidebar.js"></script>
+<script>
+const FAQS = [
+  { q:'How does HandyFix work?', a:'You book a service, our admin reviews it and assigns the best available contractor. The contractor then contacts you and completes the job.' },
+  { q:'How long before a contractor is assigned?', a:'Our admin team typically assigns a contractor within 1–4 hours of your booking during business hours (8AM–8PM Mon–Sat).' },
+  { q:'Can I choose my contractor?', a:'Contractor assignment is managed by our admin to prevent double-bookings and ensure you get the best match for your job type and location.' },
+  { q:'How do I cancel a booking?', a:'Go to My Bookings, find the booking, and click Cancel. Only pending or scheduled bookings can be cancelled — in-progress jobs cannot.' },
+  { q:'Is payment made online or in person?', a:'Payment is settled directly with the contractor after the job is completed. We support cash, GCash, and bank transfer.' },
+  { q:'What if I\'m not satisfied with the work?', a:'Contact our support team within 24 hours of completion. We\'ll investigate and arrange a re-do or partial refund if warranted.' },
+  { q:'How do I leave a review?', a:'After a booking is marked completed, go to My Bookings and click "Leave Review" next to that booking.' },
+];
+
+document.addEventListener('DOMContentLoaded', () => {
+  buildClientSidebar('client_support.html');
+  renderFAQ();
+});
+
+function renderFAQ() {
+  document.getElementById('faqList').innerHTML = FAQS.map((f,i) => `
+    <div class="faq-item" id="faq${i}">
+      <div class="faq-question" onclick="toggleFAQ(${i})">
+        <span>${HF.escapeHtml(f.q)}</span>
+        <span class="faq-icon">+</span>
+      </div>
+      <div class="faq-answer" id="faqA${i}">${HF.escapeHtml(f.a)}</div>
+    </div>`).join('');
+}
+
+function toggleFAQ(i) {
+  document.getElementById('faq'+i).classList.toggle('open');
+  document.getElementById('faqA'+i).classList.toggle('open');
+}
+
+async function sendSupport(e) {
+  e.preventDefault();
+  const btn = document.getElementById('supportBtn');
+  btn.textContent = 'Sending…'; btn.disabled = true;
+  try {
+    await hfFetch('api/client.php?action=support', 'POST', {
+      subject: document.getElementById('supportSubject').value,
+      message: document.getElementById('supportMsg').value,
+    });
+    HF.showToast("Message sent! We'll respond within 24 hours.",'success');
+    e.target.reset();
+  } catch(err) {
+    HF.showToast(err.message||'Failed to send message','error');
+  } finally { btn.textContent='Send Message →'; btn.disabled=false; }
+}
+</script>
+</body>
+</html>

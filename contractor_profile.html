@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Profile — Contractor Portal</title>
+  <link rel="stylesheet" href="contractor.css"/>
+  <style>
+    .profile-hero { background:linear-gradient(135deg,var(--maroon-dark) 0%,rgba(107,5,4,0.3) 60%,var(--surface) 100%); border:1px solid var(--border); border-radius:var(--radius-xl); padding:28px; margin-bottom:22px; display:flex; align-items:center; gap:24px; flex-wrap:wrap; position:relative; overflow:hidden; }
+    .profile-hero::before { content:''; position:absolute; top:-40px; right:-40px; width:200px; height:200px; background:radial-gradient(circle,rgba(230,175,46,0.1) 0%,transparent 70%); border-radius:50%; pointer-events:none; }
+    .profile-hero-name { font-family:'Playfair Display',serif; font-size:24px; font-weight:700; color:var(--text-primary); margin-bottom:4px; }
+    .profile-hero-role { font-size:12px; font-weight:600; color:var(--gold); text-transform:uppercase; letter-spacing:1px; margin-bottom:12px; }
+    .hero-stat { text-align:center; }
+    .hero-stat-val { font-family:'Playfair Display',serif; font-size:20px; font-weight:700; color:var(--white); line-height:1; }
+    .hero-stat-lbl { font-size:10px; color:rgba(255,255,255,0.5); text-transform:uppercase; letter-spacing:0.6px; margin-top:2px; }
+    .verify-row { display:flex; align-items:center; gap:10px; padding:11px 0; border-bottom:1px solid var(--border-soft); flex-wrap:wrap; }
+    .verify-row:last-child { border-bottom:none; }
+    .verify-row-label { flex:1; min-width:100px; font-size:13px; color:var(--text-secondary); }
+    .verify-row-value { font-size:13px; font-weight:600; color:var(--text-primary); }
+    .skill-tag { display:inline-flex; align-items:center; gap:5px; padding:5px 12px; background:var(--gold-dim); border:1px solid var(--gold-border); border-radius:99px; font-size:12px; font-weight:600; color:var(--gold); }
+    .skill-tag .rm { cursor:pointer; color:var(--text-muted); font-size:13px; }
+    .skill-tag .rm:hover { color:var(--danger); }
+    .skills-wrap { display:flex; gap:8px; flex-wrap:wrap; padding:12px 0; }
+    .completion-bar { background:var(--surface-2); border:1px solid var(--border-soft); border-radius:var(--radius); padding:14px 18px; margin-bottom:20px; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+  </style>
+</head>
+<body>
+<div class="portal-layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <div class="logo-mark">HF</div>
+        <div class="sidebar-logo-text"><strong>HandyFix</strong><small>Contractor Portal</small></div>
+      </div>
+      <button class="toggle-btn" id="sidebarToggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg></button>
+    </div>
+    <div class="sidebar-user">
+      <div class="user-avatar-wrap">
+        <img class="user-avatar" id="sidebarAvatar" src="" alt="" style="display:none"/>
+        <div class="user-avatar-fallback" id="sidebarAvatarFallback">?</div>
+        <span class="status-dot"></span>
+      </div>
+      <div class="user-info">
+        <div class="user-name" id="sidebarUserName">Loading…</div>
+        <div class="user-role" id="sidebarUserRole">Contractor</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+      <a href="contractor_dashboard.html" class="nav-item" data-page="contractor_dashboard.html"><span class="nav-icon">🏠</span><span class="sidebar-label">Dashboard</span><span class="nav-tooltip">Dashboard</span></a>
+      <a href="contractor_bookings.html"  class="nav-item" data-page="contractor_bookings.html"><span class="nav-icon">📋</span><span class="sidebar-label">Bookings</span><span class="nav-badge" id="bookingsBadge" style="display:none">0</span><span class="nav-tooltip">Bookings</span></a>
+      <a href="contractor_messages.html"  class="nav-item" data-page="contractor_messages.html"><span class="nav-icon">💬</span><span class="sidebar-label">Messages</span><span class="nav-badge" id="messagesBadge" style="display:none">0</span><span class="nav-tooltip">Messages</span></a>
+      <a href="contractor_calendar.html"  class="nav-item" data-page="contractor_calendar.html"><span class="nav-icon">📅</span><span class="sidebar-label">Calendar</span><span class="nav-tooltip">Calendar</span></a>
+      <div class="nav-section-label">Account</div>
+      <a href="contractor_profile.html"   class="nav-item active" data-page="contractor_profile.html"><span class="nav-icon">👤</span><span class="sidebar-label">Profile</span><span class="nav-tooltip">Profile</span></a>
+      <a href="contractor_settings.html"  class="nav-item" data-page="contractor_settings.html"><span class="nav-icon">⚙️</span><span class="sidebar-label">Settings</span><span class="nav-tooltip">Settings</span></a>
+      <div class="divider"></div>
+      <button class="nav-item nav-logout" onclick="handleLogout(event)"><span class="nav-icon">🚪</span><span class="sidebar-label">Log Out</span><span class="nav-tooltip">Log Out</span></button>
+    </nav>
+    <div class="sidebar-footer"><div class="sidebar-footer-text">HandyFix v3.0 © 2026</div></div>
+  </aside>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="main-content" id="mainContent">
+    <header class="top-header">
+      <div class="header-left">
+        <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+        <div><div class="page-title">My Profile</div><div class="breadcrumb">Manage your personal information</div></div>
+      </div>
+      <div class="header-right">
+        <div class="header-chip" id="headerDate">—</div>
+        <button class="theme-toggle-btn">☀️</button>
+      </div>
+    </header>
+
+    <div class="page-content" id="profileContent">
+      <div style="display:flex;align-items:center;justify-content:center;padding:60px;color:var(--text-muted);gap:12px">
+        <div style="width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite"></div>
+        Loading profile…
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="modal-overlay" id="logoutModal">
+  <div class="modal" style="max-width:360px;text-align:center">
+    <div style="font-size:44px;margin-bottom:12px">🚪</div>
+    <div class="modal-title" style="text-align:center;margin-bottom:8px">Log Out?</div>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:22px">You will be returned to the login screen.</p>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="btn btn-secondary" onclick="closeModal('logoutModal')">Stay</button>
+      <button class="btn btn-maroon" onclick="confirmLogout()">Yes, Log Out</button>
+    </div>
+  </div>
+</div>
+<div id="toast-container"></div>
+<script src="contractor.js"></script>
+<script>
+let profileData = null;
+let skills = [];
+
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(loadProfile, 400);
+});
+
+async function loadProfile() {
+  try {
+    profileData = await apiFetch('api/contractor.php?action=me');
+    skills = (profileData.skills||'').split(',').map(s=>s.trim()).filter(Boolean);
+    renderProfile(profileData);
+  } catch(e) {
+    document.getElementById('profileContent').innerHTML = emptyState('❌','Failed to load profile','Please refresh the page');
+  }
+}
+
+// FIX: Removed the buggy 'await' syntax error inside this standard function.
+function renderProfile(p) {
+  buildProfileHTML(p);
+}
+
+async function buildProfileHTML(p) {
+  let stats = { total_bookings:0, completed:0, earnings:0, rating:0 };
+  try { stats = await apiFetch('api/contractor.php?action=stats'); } catch(_) {}
+
+  document.getElementById('profileContent').innerHTML = `
+    <div class="profile-hero">
+      <div style="width:90px;height:90px;border-radius:50%;background:linear-gradient(135deg,var(--maroon),var(--maroon-dark));display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700;color:var(--gold);border:3px solid var(--gold-border);flex-shrink:0">
+        ${escapeHtml(p.initials||'?')}
+      </div>
+      <div style="flex:1;min-width:200px">
+        <div class="profile-hero-name" id="heroName">${escapeHtml(p.name)}</div>
+        <div class="profile-hero-role">${escapeHtml(p.trade||'Contractor')}</div>
+        <div style="display:flex;gap:20px;flex-wrap:wrap">
+          <div class="hero-stat"><div class="hero-stat-val">${stats.total_bookings}</div><div class="hero-stat-lbl">Bookings</div></div>
+          <div class="hero-stat"><div class="hero-stat-val">${stats.rating>0?stats.rating.toFixed(1):'—'}</div><div class="hero-stat-lbl">Rating</div></div>
+          <div class="hero-stat"><div class="hero-stat-val">${stats.earnings>=1000?'₱'+Math.round(stats.earnings/1000)+'K':formatCurrency(stats.earnings)}</div><div class="hero-stat-lbl">Earned</div></div>
+          <div class="hero-stat"><div class="hero-stat-val">${stats.completed}</div><div class="hero-stat-lbl">Done</div></div>
+        </div>
+      </div>
+      <span class="badge ${p.status==='active'?'badge-success':'badge-muted'}">● ${p.status||'active'}</span>
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <div class="card mb-6">
+          <div class="card-header">
+            <div class="card-title"><span class="card-title-icon">👤</span> Personal Information</div>
+            <button class="btn btn-sm btn-secondary" onclick="toggleEdit(true)">✏️ Edit</button>
+          </div>
+          <div id="personalView">
+            ${[
+              ['Full Name', p.name],
+              ['Email', p.email],
+              ['Phone', p.phone||'—'],
+              ['Address / Area', p.address||'—'],
+              ['Trade / Specialty', p.trade||'—'],
+              ['Specialization', p.specialization||'—'],
+              ['Experience', p.experience?(p.experience+' years'):'—'],
+              ['Daily Rate', p.daily_rate>0?formatCurrency(p.daily_rate):'—'],
+            ].map(([k,v])=>`<div class="verify-row"><span class="verify-row-label">${k}</span><span class="verify-row-value">${escapeHtml(String(v))}</span></div>`).join('')}
+            ${p.bio?`<div style="margin-top:12px;font-size:13px;color:var(--text-secondary);line-height:1.6;padding-top:10px;border-top:1px solid var(--border-soft)">${escapeHtml(p.bio)}</div>`:''}
+          </div>
+          <form id="personalForm" style="display:none" onsubmit="saveProfile(event)">
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">Full Name *</label><input class="form-input" id="fName" value="${escapeHtml(p.name)}" required/></div>
+              <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="fPhone" value="${escapeHtml(p.phone||'')}"/></div>
+            </div>
+            <div class="form-group"><label class="form-label">Address / Area</label><input class="form-input" id="fAddress" value="${escapeHtml(p.address||'')}"/></div>
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">Trade *</label><input class="form-input" id="fTrade" value="${escapeHtml(p.trade||'')}"/></div>
+              <div class="form-group"><label class="form-label">Experience (yrs)</label><input class="form-input" type="number" id="fExp" min="0" value="${p.experience||0}"/></div>
+            </div>
+            <div class="form-group"><label class="form-label">Daily Rate (₱)</label><input class="form-input" type="number" id="fRate" min="0" value="${p.daily_rate||0}"/></div>
+            <div class="form-group"><label class="form-label">Bio</label><textarea class="form-input" id="fBio" rows="3" placeholder="Tell clients about yourself…">${escapeHtml(p.bio||'')}</textarea></div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="toggleEdit(false)">Cancel</button>
+              <button type="submit" class="btn btn-primary btn-sm">💾 Save</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><div class="card-title"><span class="card-title-icon">🛠️</span> Skills & Expertise</div></div>
+          <div class="skills-wrap" id="skillsWrap"></div>
+          <div style="display:flex;gap:8px;margin-top:4px">
+            <input class="form-input" id="newSkill" placeholder="Add a skill…" style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();addSkill();}"/>
+            <button class="btn btn-outline-gold btn-sm" onclick="addSkill()">+ Add</button>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card mb-6">
+          <div class="card-header"><div class="card-title"><span class="card-title-icon">🔑</span> Change Password</div></div>
+          <form onsubmit="changePassword(event)">
+            <div class="form-group"><label class="form-label">Current Password</label><input class="form-input" type="password" id="curPass" placeholder="••••••••"/></div>
+            <div class="form-group"><label class="form-label">New Password *</label><input class="form-input" type="password" id="newPass" placeholder="Min 8 chars" oninput="checkStr(this.value)"/>
+              <div style="height:4px;border-radius:99px;background:var(--surface-3);margin-top:6px;overflow:hidden"><div id="strBar" style="height:100%;width:0;background:var(--danger);border-radius:99px;transition:all 0.3s"></div></div>
+              <div class="form-hint" id="strLbl">Enter a password</div>
+            </div>
+            <div class="form-group"><label class="form-label">Confirm New Password</label><input class="form-input" type="password" id="conPass" placeholder="••••••••"/></div>
+            <div style="text-align:right"><button type="submit" class="btn btn-primary btn-sm">Update Password</button></div>
+          </form>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><div class="card-title"><span class="card-title-icon">📅</span> Availability Status</div></div>
+          <div class="form-group">
+            <label class="form-label">Current Status</label>
+            <select class="form-input" id="availSelect">
+              <option value="available" ${p.availability==='available'?'selected':''}>✅ Available</option>
+              <option value="busy"      ${p.availability==='busy'     ?'selected':''}>🔄 Busy</option>
+              <option value="off"       ${p.availability==='off'      ?'selected':''}>🔴 Off / Unavailable</option>
+            </select>
+          </div>
+          <button class="btn btn-primary btn-sm w-full" onclick="saveAvailability()">Save Status</button>
+        </div>
+      </div>
+    </div>`;
+
+  renderSkills();
+}
+
+function renderSkills() {
+  const wrap = document.getElementById('skillsWrap');
+  if (!wrap) return;
+  if (!skills.length) { wrap.innerHTML = '<span style="font-size:12px;color:var(--text-muted)">No skills added yet.</span>'; return; }
+  wrap.innerHTML = skills.map((s,i) => `<span class="skill-tag">${escapeHtml(s)}<span class="rm" onclick="removeSkill(${i})">×</span></span>`).join('');
+}
+
+function addSkill() {
+  const input = document.getElementById('newSkill');
+  const val   = input.value.trim();
+  if (!val) return;
+  if (skills.includes(val)) { showToast('Skill already added','warning'); return; }
+  if (skills.length >= 15)  { showToast('Max 15 skills','warning'); return; }
+  skills.push(val); input.value = '';
+  renderSkills(); saveSkillsToServer();
+}
+
+function removeSkill(i) {
+  skills.splice(i,1); renderSkills(); saveSkillsToServer();
+}
+
+async function saveSkillsToServer() {
+  try {
+    await apiFetch('api/contractor.php?action=profile', 'PUT', { ...profileData, skills: skills.join(',') });
+  } catch(_) {}
+}
+
+function toggleEdit(show) {
+  document.getElementById('personalView').style.display = show ? 'none' : '';
+  document.getElementById('personalForm').style.display = show ? '' : 'none';
+}
+
+async function saveProfile(e) {
+  e.preventDefault();
+  const payload = {
+    name:    document.getElementById('fName').value.trim(),
+    phone:   document.getElementById('fPhone').value.trim(),
+    address: document.getElementById('fAddress').value.trim(),
+    trade:   document.getElementById('fTrade').value.trim(),
+    experience: parseInt(document.getElementById('fExp').value||0),
+    daily_rate: parseFloat(document.getElementById('fRate').value||0),
+    bio:     document.getElementById('fBio').value.trim(),
+    skills:  skills.join(','),
+    specialization: profileData?.specialization||'',
+  };
+  try {
+    await apiFetch('api/contractor.php?action=profile', 'PUT', payload);
+    showToast('Profile updated!','success');
+    toggleEdit(false);
+    await loadProfile();
+  } catch(e) { showToast(e.message||'Save failed','error'); }
+}
+
+async function changePassword(e) {
+  e.preventDefault();
+  const cur = document.getElementById('curPass').value;
+  const np  = document.getElementById('newPass').value;
+  const cp  = document.getElementById('conPass').value;
+  if (!cur||!np) { showToast('Fill in all password fields','warning'); return; }
+  if (np.length < 8) { showToast('Password must be at least 8 characters','error'); return; }
+  if (np !== cp)     { showToast('Passwords do not match','error'); return; }
+  try {
+    await apiFetch('api/contractor.php?action=password', 'PUT', { current_password:cur, new_password:np });
+    showToast('Password updated!','success'); e.target.reset();
+  } catch(e) { showToast(e.message||'Update failed','error'); }
+}
+
+async function saveAvailability() {
+  const avail = document.getElementById('availSelect').value;
+  try {
+    await apiFetch('api/contractor.php?action=availability', 'PUT', { availability: avail });
+    showToast('Availability updated!','success');
+  } catch(e) { showToast(e.message,'error'); }
+}
+
+function checkStr(val) {
+  let s=0; if(val.length>=8)s++; if(/[A-Z]/.test(val))s++; if(/[0-9]/.test(val))s++; if(/[^A-Za-z0-9]/.test(val))s++;
+  const l=[{w:'0%',bg:'var(--danger)',t:'Too short'},{w:'25%',bg:'var(--danger)',t:'Weak'},{w:'50%',bg:'var(--gold)',t:'Fair'},{w:'75%',bg:'#60a5fa',t:'Good'},{w:'100%',bg:'var(--success)',t:'Strong'}];
+  const lv=l[s]||l[0];
+  const bar=document.getElementById('strBar'); if(bar){bar.style.width=lv.w;bar.style.background=lv.bg;}
+  const lbl=document.getElementById('strLbl'); if(lbl) lbl.textContent=lv.t;
+}
+</script>
+</body>
+</html>

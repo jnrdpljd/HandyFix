@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Home — HandyFix Client</title>
+  <link rel="stylesheet" href="shared.css"/>
+  <style>
+    .welcome-banner { background:linear-gradient(135deg,var(--maroon-dark) 0%,rgba(107,5,4,0.4) 60%,var(--surface) 100%); border:1px solid var(--border); border-radius:var(--radius-xl); padding:28px 32px; margin-bottom:24px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; position:relative; overflow:hidden; }
+    .welcome-banner::after { content:''; position:absolute; top:-60px;right:-60px;width:220px;height:220px;background:radial-gradient(circle,rgba(230,175,46,0.08) 0%,transparent 70%);border-radius:50%; }
+    .welcome-title { font-family:'Playfair Display',serif; font-size:22px; font-weight:700; color:var(--text-primary); margin-bottom:4px; }
+    .quick-book { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:12px; margin-bottom:26px; }
+    .qb-card { background:var(--surface); border:1px solid var(--border-soft); border-radius:var(--radius-lg); padding:18px 14px; text-align:center; cursor:pointer; transition:all var(--transition); }
+    .qb-card:hover { transform:translateY(-4px); border-color:var(--border); box-shadow:var(--shadow-gold); }
+    .qb-emoji { font-size:28px; margin-bottom:8px; display:block; }
+    .qb-label { font-size:12px; font-weight:600; color:var(--text-primary); }
+    .booking-item { display:flex; align-items:center; gap:14px; padding:14px 16px; border-radius:var(--radius); border:1px solid var(--border-soft); background:var(--surface-2); margin-bottom:10px; transition:all var(--transition); cursor:pointer; }
+    .booking-item:hover { border-color:var(--border); background:var(--surface-3); }
+    .booking-icon { width:42px;height:42px;border-radius:10px;background:var(--gold-dim);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0; }
+    .c-avatar { width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--maroon),var(--maroon-dark));display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--gold);border:2px solid var(--gold-border);flex-shrink:0; }
+    @keyframes hfSpin { to{transform:rotate(360deg);} }
+  </style>
+</head>
+<body>
+<div class="portal-layout">
+  <main class="main-content" id="mainContent">
+    <header class="top-header">
+      <div class="header-left">
+        <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+        <div><div class="page-title">Home</div><div class="breadcrumb">Welcome back, <span id="headerUserName">…</span> 👋</div></div>
+      </div>
+      <div class="header-right">
+        <div class="header-chip" id="headerDate">—</div>
+        <button class="theme-toggle-btn">☀️</button>
+        
+        <div class="notif-wrapper" style="position:relative; display:inline-block;">
+          <div class="hdr-btn" onclick="toggleNotifications()" style="cursor:pointer;">🔔<span class="hdr-notif-dot" id="notifDot" style="display:none"></span></div>
+          <div id="notifDropdown" style="display:none; position:absolute; right:0; top:45px; width:320px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); box-shadow:0 10px 25px rgba(0,0,0,0.2); z-index:100; overflow:hidden; text-align:left;">
+             <div style="padding:12px 16px; font-weight:700; border-bottom:1px solid var(--border-soft); background:var(--surface-2); font-size:14px; color:var(--text-primary);">Activity Log</div>
+             <div id="notifList" style="max-height:300px; overflow-y:auto; padding:10px;">Loading...</div>
+          </div>
+        </div>
+
+      </div>
+    </header>
+
+    <div class="page-content">
+      <div class="welcome-banner">
+        <div>
+          <div class="welcome-title" id="welcomeName">Good morning!</div>
+          <div style="font-size:13px;color:var(--text-muted)">What service do you need today?</div>
+        </div>
+        <button class="btn btn-primary btn-lg" onclick="window.location.href='client_services.html'">🔧 Book a Service</button>
+      </div>
+
+      <div class="section-header mb-4"><div class="section-title">Quick Book</div></div>
+      <div class="quick-book mb-6">
+        <div class="qb-card" onclick="quickBook('Plumbing')"><span class="qb-emoji">🔧</span><div class="qb-label">Plumbing</div></div>
+        <div class="qb-card" onclick="quickBook('Electrical')"><span class="qb-emoji">⚡</span><div class="qb-label">Electrical</div></div>
+        <div class="qb-card" onclick="quickBook('Carpentry')"><span class="qb-emoji">🪚</span><div class="qb-label">Carpentry</div></div>
+        <div class="qb-card" onclick="quickBook('Home Maintenance')"><span class="qb-emoji">🏠</span><div class="qb-label">Home Care</div></div>
+        <div class="qb-card" onclick="quickBook('Tools')"><span class="qb-emoji">🔨</span><div class="qb-label">Tools</div></div>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><span class="card-title-icon">📋</span> Recent Bookings</div>
+              <a href="client_bookings.html" class="btn btn-xs btn-outline-gold">View All</a>
+            </div>
+            <div id="recentBookings"></div>
+          </div>
+        </div>
+        <div>
+          <div class="stats-grid" style="grid-template-columns:1fr 1fr;margin-bottom:18px">
+            <div class="stat-card"><div class="stat-icon">📋</div><div class="stat-value" id="statTotal">…</div><div class="stat-label">Total Bookings</div></div>
+            <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-value" id="statDone">…</div><div class="stat-label">Completed</div></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title"><span class="card-title-icon">⭐</span> Top Contractors</div></div>
+            <div id="topContractors"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="modal-overlay" id="bookModal">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-header">
+      <div class="modal-title" id="bookModalTitle">Book a Service</div>
+      <button class="modal-close" onclick="closeModal('bookModal')">✕</button>
+    </div>
+    <form onsubmit="submitBooking(event)">
+      <div class="form-group">
+        <label class="form-label">Service Type</label>
+        <select class="form-input" id="bookService">
+          <option>Plumbing</option><option>Electrical</option><option>Carpentry</option>
+          <option>Home Maintenance</option><option>Tools</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description <span class="required">*</span></label>
+        <textarea class="form-input" id="bookDesc" rows="3" placeholder="Describe the issue or job needed…" required></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Preferred Date <span class="required">*</span></label>
+          <input class="form-input" type="date" id="bookDate" required/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Preferred Time</label>
+          <input class="form-input" type="time" id="bookTime" value="09:00"/>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Service Address <span class="required">*</span></label>
+        <select class="form-input" id="bookAddress" required>
+            <option value="">Loading addresses...</option>
+        </select>
+        <div style="text-align:right; margin-top:5px; font-size:12px;">
+            <a href="client_profile.html" style="color:var(--gold); text-decoration:none;">+ Manage Addresses</a>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Additional Notes</label>
+        <textarea class="form-input" id="bookNotes" rows="2" placeholder="Any special instructions…"></textarea>
+      </div>
+      <div style="background:var(--gold-dim);border:1px solid var(--gold-border);border-radius:var(--radius);padding:12px;margin-bottom:16px;font-size:12.5px;color:var(--text-muted)">
+        💡 Our admin will review and assign the best available contractor. You'll be notified once confirmed.
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('bookModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="bookBtn">Submit Booking →</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="shared.js"></script>
+<script src="client_sidebar.js"></script>
+<script>
+const SERVICE_ICONS = { Plumbing:'🔧', Electrical:'⚡', Carpentry:'🪚', 'Home Maintenance':'🏠', Tools:'🔨', Painting:'🎨' };
+const STATUS_MAP = { pending:'badge-warning', scheduled:'badge-info', in_progress:'badge-info', completed:'badge-success', cancelled:'badge-danger' };
+
+document.addEventListener('DOMContentLoaded', () => {
+  buildClientSidebar('client_home.html');
+  document.getElementById('bookDate').min = new Date().toISOString().split('T')[0];
+  setTimeout(loadHomeData, 500);
+});
+
+async function loadHomeData() {
+  const user = HF.state.user;
+  if (user) {
+    const hour = new Date().getHours();
+    const g = hour<12 ? 'Good morning 🌅' : hour<17 ? 'Good afternoon ☀️' : 'Good evening 🌙';
+    document.getElementById('welcomeName').textContent = `${g}, ${user.name.split(' ')[0]}!`;
+  }
+
+  await Promise.all([loadStats(), loadRecentBookings(), loadTopContractors(), loadNotifications()]);
+}
+
+/* --- Notifications Logic --- */
+async function loadNotifications() {
+  const list = document.getElementById('notifList');
+  const badge = document.getElementById('notifDot');
+  try {
+    const data = await hfFetch('api/client.php?action=notifications');
+    if (data.length > 0) badge.style.display = 'block';
+    
+    list.innerHTML = data.length === 0 ? '<div style="text-align:center;padding:10px;color:var(--text-muted);font-size:13px;">No recent activity.</div>' : 
+      data.map(n => `
+        <div style="display:flex;gap:12px;padding:10px;border-bottom:1px solid var(--border-soft);">
+            <div style="font-size:18px;">${n.icon||'🔔'}</div>
+            <div>
+                <div style="font-size:13px;font-weight:600;color:${n.color||'var(--text-primary)'}">${HF.escapeHtml(n.action)}</div>
+                <div style="font-size:12px;color:var(--text-muted)">${HF.escapeHtml(n.detail)}</div>
+            </div>
+        </div>
+    `).join('');
+  } catch(e) { list.innerHTML = '<div style="color:var(--danger);padding:10px;font-size:13px;">Failed to load notifications.</div>'; }
+}
+
+function toggleNotifications() {
+  const dd = document.getElementById('notifDropdown');
+  dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+  if(dd.style.display === 'block') document.getElementById('notifDot').style.display = 'none';
+}
+
+document.addEventListener('click', e => {
+  if(!e.target.closest('.notif-wrapper')) {
+    const dd = document.getElementById('notifDropdown');
+    if(dd) dd.style.display = 'none';
+  }
+});
+
+/* --- Stats & UI Loading --- */
+async function loadStats() {
+  try {
+    const d = await hfFetch('api/client.php?action=stats');
+    document.getElementById('statTotal').textContent = d.total;
+    document.getElementById('statDone').textContent  = d.completed;
+  } catch(_) { document.getElementById('statTotal').textContent='0'; document.getElementById('statDone').textContent='0'; }
+}
+
+async function loadRecentBookings() {
+  const wrap = document.getElementById('recentBookings');
+  wrap.innerHTML = HF.loadingHTML();
+  try {
+    const rows = await hfFetch('api/client.php?action=bookings');
+    if (!rows.length) {
+      wrap.innerHTML = HF.emptyState('📋','No bookings yet','Book your first service above!');
+      return;
+    }
+    wrap.innerHTML = rows.slice(0,3).map(b => {
+      // Safety fix for dates
+      const safeDate = b.scheduled_date ? b.scheduled_date.replace(' ', 'T') : null;
+      return `
+      <div class="booking-item" onclick="window.location.href='client_bookings.html'">
+        <div class="booking-icon">${getIcon(b.service)}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13.5px;font-weight:600;color:var(--text-primary)">${HF.escapeHtml(b.service)}</div>
+          <div style="font-size:11.5px;color:var(--text-muted);margin-top:2px">📅 ${safeDate?HF.formatDate(safeDate):'TBD'} · ${HF.escapeHtml(b.booking_ref)}</div>
+        </div>
+        <span class="badge ${STATUS_MAP[b.status]||'badge-muted'}">${b.status.replace('_',' ')}</span>
+      </div>`
+    }).join('');
+  } catch(_) { wrap.innerHTML = HF.emptyState('📋','Could not load bookings'); }
+}
+
+async function loadTopContractors() {
+  const wrap = document.getElementById('topContractors');
+  wrap.innerHTML = HF.loadingHTML();
+  try {
+    const rows = await hfFetch('api/client.php?action=contractors');
+    if (!rows.length) {
+      wrap.innerHTML = `<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:20px">Contractors will appear once verified by admin.</div>`;
+      return;
+    }
+    wrap.innerHTML = rows.map(c => `
+      <div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:var(--radius);border:1px solid var(--border-soft);background:var(--surface-2);margin-bottom:8px">
+        <div class="c-avatar">${HF.escapeHtml(c.initials)}</div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:600;color:var(--text-primary)">${HF.escapeHtml(c.name)}</div>
+          <div style="font-size:11.5px;color:var(--text-muted)">${HF.escapeHtml(c.trade)}</div>
+          <div style="font-size:11.5px;color:var(--gold);margin-top:1px">⭐ ${parseFloat(c.rating||0).toFixed(1)} · ${c.jobs_completed||0} jobs</div>
+        </div>
+        <span class="badge ${c.availability==='available'?'badge-success':'badge-muted'}">${c.availability}</span>
+      </div>`).join('');
+  } catch(_) { wrap.innerHTML = ''; }
+}
+
+function getIcon(service) {
+  return Object.entries(SERVICE_ICONS).find(([k])=>service?.includes(k))?.[1] || '🔩';
+}
+
+/* --- Booking Flow --- */
+async function quickBook(type) {
+  document.getElementById('bookService').value = type;
+  document.getElementById('bookModalTitle').textContent = `Book ${type} Service`;
+  
+  // UPDATED: Fetch Address List when opening modal
+  const addrSelect = document.getElementById('bookAddress');
+  addrSelect.innerHTML = '<option value="">Loading addresses...</option>';
+  openModal('bookModal');
+  
+  try {
+      const addresses = await hfFetch('api/client.php?action=addresses');
+      if(addresses.length === 0) {
+          addrSelect.innerHTML = '<option value="">No addresses found. Please add one in Profile.</option>';
+      } else {
+          addrSelect.innerHTML = '<option value="">-- Choose a Saved Location --</option>' + 
+            addresses.map(a => `<option value="${HF.escapeHtml(a.address)}">${HF.escapeHtml(a.label)}: ${HF.escapeHtml(a.address)}</option>`).join('');
+      }
+  } catch(e) { addrSelect.innerHTML = '<option value="">Error loading addresses</option>'; }
+}
+
+async function submitBooking(e) {
+  e.preventDefault();
+  const btn = document.getElementById('bookBtn');
+  
+  const addressVal = document.getElementById('bookAddress').value;
+  if(!addressVal) {
+      HF.showToast("Please select a valid address from the dropdown.", "error");
+      return;
+  }
+  
+  btn.textContent = 'Submitting…'; btn.disabled = true;
+
+  try {
+    await hfFetch('api/client.php?action=book', 'POST', {
+      service:        document.getElementById('bookService').value,
+      description:    document.getElementById('bookDesc').value,
+      scheduled_date: document.getElementById('bookDate').value,
+      scheduled_time: document.getElementById('bookTime').value,
+      address:        addressVal,
+      notes:          document.getElementById('bookNotes').value,
+    });
+    closeModal('bookModal');
+    HF.showToast('Booking submitted! Admin will assign a contractor soon.', 'success', 5000);
+    e.target.reset();
+    loadRecentBookings();
+    loadStats();
+  } catch(err) {
+    HF.showToast(err.message || 'Booking failed', 'error');
+  } finally {
+    btn.textContent = 'Submit Booking →'; btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>
